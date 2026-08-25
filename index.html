@@ -72,7 +72,10 @@
 
   .card-inner { padding: 20px; }
   .museum-name-local { font-size: 1.5em; font-weight: 800; color: var(--etzel-blue); margin-bottom: 5px; line-height: 1.2; }
-  .welcome-msg { font-size: 1.1em; color: var(--etzel-gold); font-weight: bold; }
+  /* Darker than --etzel-gold specifically so this text on a light card
+     background clears the 4.5:1 contrast minimum (the brand gold itself
+     stays untouched everywhere it's used on dark backgrounds). */
+  .welcome-msg { font-size: 1.1em; color: #8a6a45; font-weight: bold; }
 
   .intro-container { display: flex; justify-content: center; padding: calc(20px + var(--g-offset)) 20px 20px 20px; }
   .glass-card { background: var(--bg-glass); padding: 30px; border-radius: 15px; border-top: 5px solid var(--etzel-gold); max-width: 800px; width: 100%; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
@@ -207,7 +210,7 @@
       width: 50px;
       height: 50px;
       background: var(--etzel-gold);
-      color: white;
+      color: var(--etzel-blue);
       border: none;
       border-radius: 50%;
       font-size: 24px;
@@ -220,6 +223,7 @@
   #scrollTopBtn:hover {
       transform: scale(1.1);
       background: var(--etzel-blue);
+      color: white;
   }
 
   body.high-contrast-mode #scrollTopBtn {

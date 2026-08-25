@@ -125,9 +125,13 @@
 
   .inline-audio-btn {
     display: inline-flex; vertical-align: middle;
-    padding: 3px 12px; margin: 0 8px; font-size: 0.6em;
-    border-radius: 20px; font-weight: bold; cursor: pointer;
-    align-items: center; gap: 5px;
+    padding: 4px 9px; margin: 0 8px; font-size: 0.7em;
+    border-radius: 50%; font-weight: bold; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+
+  .audio-guide-btn.icon-only {
+    padding: 8px 12px;
   }
 
   .map-placeholder { display: none; }
@@ -573,13 +577,13 @@ function prepareExhibits(code) {
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
     if (Array.isArray(exhibit.audioTracks) && exhibit.audioTracks.length > 0) {
        exhibit.audioTracks.forEach(track => {
-           controlsHTML += `<button class="audio-guide-btn" onclick="playAudioTrack('${track.file}', this)">🎧 ${track.label}</button>`;
+           controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioTrack('${track.file}', this)" aria-label="${track.label}">🎧</button>`;
        });
     } else if (exhibit.audioTracks === 'inline') {
        // Real recordings are embedded directly in the content next to their
        // sub-headings (see data-*.js) — no generic top button needed here.
     } else if (exhibit.audioText) {
-       controlsHTML += `<button class="audio-guide-btn" onclick="playAudioGuide(${exhibit.id}, this)">🎧 ${ui.audioBtn}</button>`;
+       controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioGuide(${exhibit.id}, this)" aria-label="${ui.audioBtn}">🎧</button>`;
     }
     controlsHTML += '</div>';
 
@@ -718,7 +722,7 @@ function playAudioTrack(fileUrl, btnElement) {
         btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
         activeAudioEl = null;
     };
-    audio.play();
+    audio.play().catch(() => {});
     activeAudioEl = audio;
     btnElement.classList.add('playing');
     btnElement.innerHTML = btnElement.innerHTML.replace('🎧', '⏸️');

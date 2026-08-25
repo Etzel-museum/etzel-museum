@@ -355,8 +355,8 @@
 </div>
 
 <script>
-function createExhibit(id, title, content, audioText = null) {
-    return { id, title, content, audioText };
+function createExhibit(id, title, content, audioText = null, audioTracks = null) {
+    return { id, title, content, audioText, audioTracks };
 }
 
 // Registry of languages that have full exhibit content. Each entry's full
@@ -564,7 +564,11 @@ function prepareExhibits(code) {
 
     let controlsHTML = '<div class="controls-row">';
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
-    if (exhibit.audioText) {
+    if (exhibit.audioTracks && exhibit.audioTracks.length > 0) {
+       exhibit.audioTracks.forEach(track => {
+           controlsHTML += `<button class="audio-guide-btn" onclick="playAudioTrack('${track.file}', this)">🎧 ${track.label}</button>`;
+       });
+    } else if (exhibit.audioText) {
        controlsHTML += `<button class="audio-guide-btn" onclick="playAudioGuide(${exhibit.id}, this)">🎧 ${ui.audioBtn}</button>`;
     }
     controlsHTML += '</div>';
@@ -658,8 +662,14 @@ function filterLangs() {
   });
 }
 
+let activeAudioEl = null;
+
 function stopAllAudio() {
     window.speechSynthesis.cancel();
+    if (activeAudioEl) {
+        activeAudioEl.pause();
+        activeAudioEl = null;
+    }
     document.querySelectorAll('.audio-guide-btn, .read-text-btn').forEach(b => {
         b.classList.remove('playing');
         b.classList.remove('speaking-active');
@@ -674,6 +684,34 @@ function stopAllAudio() {
         floatTts.classList.remove('speaking-active');
         floatTts.innerText = '🔇';
     }
+}
+
+// Plays a real recorded audio file for one exhibit sub-section (used when
+// exhibit.audioTracks is set). Falls back to nothing audible if the file
+// is missing; the browser's own error handling covers that case.
+function playAudioTrack(fileUrl, btnElement) {
+    if (btnElement.classList.contains('playing')) {
+        stopAllAudio();
+        return;
+    }
+
+    stopAllAudio();
+
+    const audio = new Audio(fileUrl);
+    audio.onended = () => {
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
+        activeAudioEl = null;
+    };
+    audio.onerror = () => {
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
+        activeAudioEl = null;
+    };
+    audio.play();
+    activeAudioEl = audio;
+    btnElement.classList.add('playing');
+    btnElement.innerHTML = btnElement.innerHTML.replace('🎧', '⏸️');
 }
 
 function speakText(id, btnElement) {

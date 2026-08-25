@@ -23,12 +23,15 @@
 
   body::before {
     content: ""; position: fixed; top: 0; left: 0; width: 100%; z-index: -1;
-    /* 100% (via 100vh) is the fallback for browsers without dvh support;
-       100dvh tracks the *actual* visible viewport on mobile, so the
-       background doesn't visibly resize/shift as the browser's address
-       bar hides and shows while scrolling. */
+    /* 100vh is the fallback for browsers without lvh support. 100lvh is
+       the "large viewport height" — sized as if the browser's address
+       bar were always hidden, and it stays CONSTANT regardless of
+       whether the bar is actually shown or hidden. (100dvh was tried
+       first, but dvh is dynamic by definition — it continuously tracks
+       the toolbar's current state, which is exactly what was causing
+       the background to visibly resize while scrolling.) */
     height: 100vh;
-    height: 100dvh;
+    height: 100lvh;
     background-image: url('background.jpg');
     background-repeat: no-repeat; background-position: center center; background-size: cover;
   }
@@ -219,7 +222,7 @@
       background: #000 !important;
   }
 
-  body.high-contrast-mode { background: #000 !important; color: #fff !important; }
+  body.high-contrast-mode { background: #000 !important; color: #ff0 !important; }
   body.high-contrast-mode::before { display: none !important; }
 
   body.high-contrast-mode .view-section,
@@ -227,7 +230,7 @@
   body.high-contrast-mode .exhibit-item,
   body.high-contrast-mode .home-header,
   body.high-contrast-mode .sticky-nav {
-      background: #000 !important; color: #fff !important; border-color: #ff0 !important;
+      background: #000 !important; color: #ff0 !important; border-color: #ff0 !important;
   }
 
   body.high-contrast-mode .lang-card,
@@ -243,8 +246,42 @@
   body.high-contrast-mode .exhibit-title,
   body.high-contrast-mode h1,
   body.high-contrast-mode h2,
+  body.high-contrast-mode h3,
   body.high-contrast-mode .accessibility-link {
       color: #ff0 !important;
+  }
+
+  /* These all set their OWN explicit color/background in normal mode
+     (not inherited), so the blanket rules above can't reach them —
+     each needs to be named directly or it stays its normal-mode color
+     even with the background gone black. */
+  body.high-contrast-mode .lang-label,
+  body.high-contrast-mode .museum-name-local,
+  body.high-contrast-mode .welcome-msg,
+  body.high-contrast-mode .transcript-toggle summary {
+      color: #ff0 !important;
+  }
+  body.high-contrast-mode .exhibit-num {
+      background: #000 !important; color: #ff0 !important; border: 1px solid #ff0 !important;
+  }
+  body.high-contrast-mode .transcript-text {
+      background: #000 !important; border-inline-start-color: #ff0 !important;
+  }
+  body.high-contrast-mode .search-input {
+      background: #000 !important; color: #ff0 !important; border-color: #ff0 !important;
+  }
+  body.high-contrast-mode .search-input::placeholder {
+      color: #ff0 !important; opacity: 0.7;
+  }
+
+  /* Without this, the "you are here" nav-number highlight and the
+     "already viewed" dot both disappear into the general yellow-on-black
+     styling above, and a visitor can no longer tell where they are. */
+  body.high-contrast-mode .nav-num.active {
+      background: #ff0 !important; color: #000 !important; border-color: #fff !important;
+  }
+  body.high-contrast-mode .nav-num.visited::after {
+      background: #000 !important; border-color: #ff0 !important;
   }
 
   #scrollTopBtn {
@@ -519,6 +556,16 @@ function toggleContrast() {
     document.getElementById('a11y-announcer').innerText = isHighContrast ? 'מצב ניגודיות גבוהה הופעל' : 'מצב ניגודיות רגיל הופעל';
 }
 
+// Sets the ltr/rtl direction class on <body> WITHOUT wiping other
+// standing classes — most importantly high-contrast-mode, which used to
+// get silently reset on every navigation because this used to be a
+// plain `document.body.className = dir` assignment.
+function setBodyDir(dir) {
+    const wasHighContrast = document.body.classList.contains('high-contrast-mode');
+    document.body.className = dir;
+    if (wasHighContrast) document.body.classList.add('high-contrast-mode');
+}
+
 function initHome() {
   const grid = document.getElementById('langsGrid');
   grid.innerHTML = '';
@@ -597,7 +644,7 @@ async function loadLang(code) {
   currentLang = code;
   const dir = data.meta.dir;
 
-  document.body.className = dir;
+  setBodyDir(dir);
   document.documentElement.lang = code;
   document.documentElement.dir = dir;
 
@@ -795,17 +842,17 @@ function navTo(viewName) {
   target.setAttribute('tabindex', '-1');
   target.focus();
   if (viewName === 'home') {
-    document.body.className = 'ltr';
+    setBodyDir('ltr');
     ttsBtn.style.display = 'none';
   } else if (viewName === 'exhibits') {
-    document.body.className = DATA[currentLang].meta.dir;
+    setBodyDir(DATA[currentLang].meta.dir);
     ttsBtn.style.display = 'none';
     requestAnimationFrame(updateStickyOffset);
   } else if (viewName === 'accessibility') {
-    document.body.className = 'rtl';
+    setBodyDir('rtl');
     ttsBtn.style.display = 'flex';
   } else {
-    document.body.className = DATA[currentLang].meta.dir;
+    setBodyDir(DATA[currentLang].meta.dir);
     ttsBtn.style.display = 'flex';
   }
 }

@@ -1,2 +1,5 @@
 # Original un-renamed source recordings (duplicated, renamed, in audio/)
 /אודיו/
+
+# Local reference backups of replaced assets (not needed on the live site)
+/backups/

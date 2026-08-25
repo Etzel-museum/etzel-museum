@@ -256,7 +256,7 @@
 <div id="a11y-announcer" aria-live="polite" style="position:absolute; width:1px; height:1px; overflow:hidden;"></div>
 <div class="floating-controls">
   <button class="float-btn" id="contrastBtn" aria-label="החלף מצב ניגודיות גבוהה" onclick="toggleContrast()">◐</button>
-  <button class="float-btn" id="ttsBtn" aria-label="הקרא טקסט">🔇</button>
+  <button class="float-btn" id="ttsBtn" aria-label="הקרא טקסט">🔈</button>
   <button class="float-btn" id="fontBtn" aria-label="הגדל טקסט">A+</button>
 </div>
 
@@ -696,7 +696,7 @@ function stopAllAudio() {
     const floatTts = document.getElementById('ttsBtn');
     if (floatTts) {
         floatTts.classList.remove('speaking-active');
-        floatTts.innerText = '🔇';
+        floatTts.innerText = '🔈';
     }
 }
 
@@ -809,7 +809,7 @@ document.getElementById('ttsBtn').addEventListener('click', () => {
 
       u.onend = () => {
           btn.classList.remove('speaking-active');
-          btn.innerText = '🔇';
+          btn.innerText = '🔈';
       };
 
       window.speechSynthesis.speak(u);

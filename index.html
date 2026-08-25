@@ -704,6 +704,7 @@ function prepareExhibits(code) {
                   activeBtn.classList.add('active', 'visited');
                   activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                   saveProgress(code, id);
+                  preloadExhibitAudio(id);
               }
           }
       });
@@ -781,6 +782,7 @@ function prepareExhibits(code) {
       navBtn.classList.add('active', 'visited');
       document.getElementById(`exhibit-${exhibit.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
       saveProgress(code, String(exhibit.id));
+      preloadExhibitAudio(exhibit.id);
       setTimeout(() => { manualNavLock = false; }, 900);
     };
     navBar.appendChild(navBtn);
@@ -863,6 +865,35 @@ function filterLangs() {
 }
 
 let activeAudioEl = null;
+const preloadedAudioUrls = new Set();
+const preloadedAudioEls = []; // keeps preloading Audio objects alive so GC doesn't abort their download
+
+// Warms the browser cache for an exhibit's real audio-guide recordings
+// (not TTS) once it scrolls into view, so playback starts instantly when
+// the visitor actually presses play. Runs at idle priority so it never
+// competes with the exhibit's own content/images.
+function preloadExhibitAudio(id) {
+    const item = document.getElementById(`exhibit-${id}`);
+    if (!item) return;
+
+    const urls = [];
+    item.querySelectorAll('.audio-guide-btn').forEach(btn => {
+        const match = (btn.getAttribute('onclick') || '').match(/playAudioTrack\('([^']+)'/);
+        if (match) urls.push(match[1]);
+    });
+
+    urls.forEach(url => {
+        if (preloadedAudioUrls.has(url)) return;
+        preloadedAudioUrls.add(url);
+        const schedule = window.requestIdleCallback || (fn => setTimeout(fn, 300));
+        schedule(() => {
+            const a = new Audio();
+            a.preload = 'auto';
+            a.src = url;
+            preloadedAudioEls.push(a);
+        });
+    });
+}
 
 function stopAllAudio() {
     window.speechSynthesis.cancel();

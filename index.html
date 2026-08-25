@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Etzel Museum App</title>
+<style>
+  /* --- הגדרות עיצוב --- */
+  :root {
+      --etzel-blue: #003366; --etzel-gold: #c49a6c; --text-dark: #333; --bg-glass: rgba(255, 255, 255, 0.95);
+      --g-offset: 0px;
+      --sticky-nav-h: 130px;
+  }
+
+  html { scroll-behavior: smooth; overscroll-behavior-y: none; }
+
+  body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0; color: var(--text-dark);
+      overflow-x: hidden;
+  }
+
+  body::before {
+    content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+    background-image: url('https://i.postimg.cc/25wrvw8Q/Gemini-Generated-Image-y409xsy409xsy409.png');
+    background-repeat: no-repeat; background-position: center center; background-size: cover;
+  }
+
+  .view-section { display: none; min-height: 100vh; width: 100%; box-sizing: border-box; padding-bottom: 50px; }
+  .view-section.active { display: block; animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .floating-controls {
+      position: fixed;
+      bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+      left: 20px;
+      right: auto;
+      display: flex; flex-direction: column; gap: 10px;
+      z-index: 99999;
+  }
+  .float-btn { width: 50px; height: 50px; background: white; color: var(--etzel-blue); border: 2px solid var(--etzel-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; }
+  .float-btn:hover { transform: scale(1.1); }
+
+  .speaking-active { background: var(--etzel-gold) !important; color: white !important; border-color: white !important; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(196, 154, 108, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+
+  .home-header { background: rgba(0, 51, 102, 0.95); color: #fff; text-align: center; padding: calc(40px + var(--g-offset)) 20px 40px 20px; border-bottom: 4px solid var(--etzel-gold); }
+  .home-header h1 { font-size: 2.2em; margin: 0; text-transform: uppercase; }
+  .home-header h2 { font-size: 1.2em; color: var(--etzel-gold); font-weight: normal; margin: 5px 0 0 0; }
+
+  .search-box { text-align: center; margin: 20px 0; }
+  .search-input { padding: 12px 20px; border-radius: 30px; border: 2px solid var(--etzel-gold); width: 80%; max-width: 300px; font-size: 16px; outline: none; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+  .lang-card {
+      background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
+      padding: 0; border-radius: 12px; text-align: center; cursor: pointer;
+      border-top: 5px solid var(--etzel-gold); transition: 0.2s;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+  .lang-card:hover { transform: translateY(-5px); background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  .lang-card:disabled { opacity: 0.6; cursor: wait; }
+
+  .lang-label {
+      background: rgba(0, 51, 102, 0.1); color: var(--etzel-blue);
+      font-size: 0.9em; font-weight: bold; padding: 8px;
+      text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .card-inner { padding: 20px; }
+  .museum-name-local { font-size: 1.5em; font-weight: 800; color: var(--etzel-blue); margin-bottom: 5px; line-height: 1.2; }
+  .welcome-msg { font-size: 1.1em; color: var(--etzel-gold); font-weight: bold; }
+
+  .intro-container { display: flex; justify-content: center; padding: calc(20px + var(--g-offset)) 20px 20px 20px; }
+  .glass-card { background: var(--bg-glass); padding: 30px; border-radius: 15px; border-top: 5px solid var(--etzel-gold); max-width: 800px; width: 100%; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .btn-back { position: absolute; top: 15px; left: 15px; background: #eee; border: none; padding: 5px 12px; border-radius: 15px; cursor: pointer; font-weight: bold; color: #555; }
+  .rtl .btn-back { left: auto; right: 15px; }
+  a { text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  body.high-contrast-mode a { color: #ff0 !important; }
+  .big-btn { display: block; width: 100%; background: var(--etzel-blue); color: white; text-align: center; padding: 15px; border-radius: 50px; text-decoration: none; font-weight: bold; margin-top: 20px; cursor: pointer; font-size: 1.2em; border: none; }
+  .big-btn:hover { background: var(--etzel-gold); }
+
+  .sticky-nav {
+      position: sticky;
+      top: 0;
+      padding: calc(10px + var(--g-offset)) 5px 10px 5px;
+      background: var(--etzel-blue);
+      overflow-x: auto; white-space: nowrap;
+      z-index: 9999; display: flex; gap: 12px; align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4); border-bottom: 2px solid var(--etzel-gold);
+  }
+  .nav-num { width: 40px; height: 40px; background: rgba(255,255,255,0.15); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: 0.2s; border: 1px solid rgba(255,255,255,0.3); font-family: inherit; font-size: 1em; }
+
+  .nav-num.active { background: var(--etzel-gold); color: black; border-color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+  #exhibits-container { padding-bottom: 70vh; }
+  .exhibit-item {
+      background: var(--bg-glass); margin: 20px; padding: 25px; border-radius: 12px;
+      scroll-margin-top: calc(var(--sticky-nav-h) + 10px);
+      position: relative; z-index: 1;
+  }
+  .exhibit-num { background: var(--etzel-blue); color: white; display: inline-block; padding: 5px 12px; border-radius: 15px; font-size: 0.9em; margin-bottom: 10px; font-weight: bold; }
+
+  .exhibit-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 15px; }
+  .exhibit-title { font-size: 1.8em; color: var(--etzel-blue); margin: 0; font-weight: 800; }
+
+  .controls-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+  .audio-guide-btn, .read-text-btn {
+    padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; font-size: 1em; transition: 0.2s;
+    border: 2px solid var(--etzel-gold);
+  }
+
+  .audio-guide-btn { background: #fff; color: var(--etzel-blue); }
+  .audio-guide-btn:hover { background: var(--etzel-gold); color: white; }
+
+  .read-text-btn { background: rgba(0, 51, 102, 0.1); color: var(--etzel-blue); border-color: var(--etzel-blue); }
+  .read-text-btn:hover { background: var(--etzel-blue); color: white; }
+
+  .exhibit-body { font-size: 1.1em; line-height: 1.6; margin-top: 15px; }
+
+  .map-placeholder { display: none; }
+
+  .rtl { direction: rtl; } .ltr { direction: ltr; }
+  .rtl .exhibit-item { border-right: 5px solid var(--etzel-gold); }
+  .ltr .exhibit-item { border-left: 5px solid var(--etzel-gold); }
+
+  *:focus-visible {
+      outline: 3px solid #000;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px rgba(196, 154, 108, 0.5);
+  }
+
+  button { font-family: inherit; border: none; background: none; padding: 0; margin: 0; }
+
+  .accessibility-link {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 25px;
+      border-radius: 30px;
+      border: 2px solid var(--etzel-gold);
+      color: var(--etzel-blue);
+      text-decoration: underline;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1em;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: all 0.2s ease;
+  }
+  .accessibility-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  }
+
+  body.high-contrast-mode .accessibility-link {
+      background: #000 !important;
+  }
+
+  body.high-contrast-mode { background: #000 !important; color: #fff !important; }
+  body.high-contrast-mode::before { display: none !important; }
+
+  body.high-contrast-mode .view-section,
+  body.high-contrast-mode .glass-card,
+  body.high-contrast-mode .exhibit-item,
+  body.high-contrast-mode .home-header,
+  body.high-contrast-mode .sticky-nav {
+      background: #000 !important; color: #fff !important; border-color: #ff0 !important;
+  }
+
+  body.high-contrast-mode .lang-card,
+  body.high-contrast-mode .float-btn,
+  body.high-contrast-mode .read-text-btn,
+  body.high-contrast-mode .audio-guide-btn,
+  body.high-contrast-mode .btn-back,
+  body.high-contrast-mode .big-btn,
+  body.high-contrast-mode .nav-num {
+      background: #000 !important; color: #ff0 !important; border: 2px solid #ff0 !important;
+  }
+
+  body.high-contrast-mode .exhibit-title,
+  body.high-contrast-mode h1,
+  body.high-contrast-mode h2,
+  body.high-contrast-mode .accessibility-link {
+      color: #ff0 !important;
+  }
+
+  #scrollTopBtn {
+      display: none;
+      position: fixed;
+      bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: var(--etzel-gold);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 99999;
+      transition: all 0.2s ease;
+  }
+  #scrollTopBtn:hover {
+      transform: scale(1.1);
+      background: var(--etzel-blue);
+  }
+
+  body.high-contrast-mode #scrollTopBtn {
+      background: #000 !important;
+      color: #ff0 !important;
+      border: 2px solid #ff0 !important;
+  }
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #000;
+    color: #ff0;
+    padding: 8px;
+    z-index: 100000;
+    transition: top 0.2s;
+}
+.skip-link:focus {
+    top: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+      * {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+      }
+  }
+</style>
+</head>
+<body>
+<a href="#exhibits-container" class="skip-link">דלג לתוכן המרכזי</a>
+
+<div id="a11y-announcer" aria-live="polite" style="position:absolute; width:1px; height:1px; overflow:hidden;"></div>
+<div class="floating-controls">
+  <button class="float-btn" id="contrastBtn" aria-label="החלף מצב ניגודיות גבוהה" onclick="toggleContrast()">◐</button>
+  <button class="float-btn" id="ttsBtn" aria-label="הקרא טקסט">🔇</button>
+  <button class="float-btn" id="fontBtn" aria-label="הגדל טקסט">A+</button>
+</div>
+
+<div id="view-home" class="view-section active ltr">
+
+  <header class="home-header">
+    <h1>מוזיאון האצ"ל בתש"ח</h1>
+    <h2>The Etzel 1947-1949 Museum</h2>
+  </header>
+  <div class="search-box" role="search">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search Language / חפש שפה..." aria-label="חפש שפה" oninput="filterLangs()">
+  </div>
+  <div class="cards-grid" id="langsGrid"></div>
+<div style="text-align:center; margin-top:40px; padding-bottom:30px;"><a class="accessibility-link" onclick="navTo('accessibility')" tabindex="0" role="button">הצהרת נגישות / Accessibility Statement</a></div>
+
+</div> <div id="view-intro" class="view-section">
+
+  <div class="intro-container">
+    <div class="glass-card">
+      <button class="btn-back" onclick="navTo('home')">✕ Back / חזרה</button>
+      <h1 id="intro-title" style="color:var(--etzel-blue); text-align:center;"></h1>
+      <h2 id="intro-sub" style="color:var(--etzel-gold); text-align:center; font-size:1.3em; margin-bottom:20px;"></h2>
+      <p id="intro-body" style="font-size:1.1em; line-height:1.6; text-align:justify;"></p>
+
+      <div style="margin-top:30px; padding:15px; background:rgba(0,0,0,0.05); border-radius:10px; font-size:0.9em; border-inline-start: 4px solid var(--etzel-gold);">
+        <span id="intro-disc"></span>
+        <br><br>
+        <a href="mailto:YOUR_EMAIL@GMAIL.COM" style="font-weight:bold; color:var(--etzel-blue);">[Email]</a>
+      </div>
+      <button class="big-btn" id="startBtn" onclick="navTo('exhibits')"></button>
+<div style="text-align:center; margin-top:40px; padding-bottom:30px;"><a class="accessibility-link" onclick="navTo('accessibility')" tabindex="0" role="button">הצהרת נגישות / Accessibility Statement</a></div>
+    </div>
+  </div>
+</div>
+<div id="view-accessibility" class="view-section rtl">
+  <div class="intro-container">
+    <div class="glass-card">
+      <button class="btn-back" onclick="navTo('home')" aria-label="חזרה לדף הבית">✕ חזרה / Back</button>
+
+      <h1 style="text-align:center; color: var(--etzel-blue);">הצהרת נגישות</h1>
+      <div style="font-size:1.1em; line-height:1.6; margin-bottom: 40px;">
+        <p>מוזיאון האצ"ל רואה חשיבות עליונה בהנגשת האתר והמוזיאון הפיזי לאנשים עם מוגבלויות, כדי לאפשר חוויה שוויונית ומכבדת לכל המבקרים.</p>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">נגישות המדריך הדיגיטלי (האתר):</h3>
+        <ul>
+          <li>האתר מותאם לגלישה באמצעות מקלדת (ניווט בעזרת מקש Tab) ולשימוש בקוראי מסך.</li>
+          <li>ניתן להגדיל את הטקסט באתר באמצעות כפתור <b>A+</b> שבתחתית המסך.</li>
+          <li>ניתן לשנות את צבעי האתר ל<b>ניגודיות גבוהה</b> (רקע שחור, טקסט צהוב) באמצעות כפתור הניגודיות <b>◐</b>.</li>
+          <li>האתר מכיל מערכת הקראת טקסט מובנית (TTS) המקריאה את כלל המיצגים, וכן מדריך קולי מוקלט.</li>
+        </ul>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">נגישות במוזיאון הפיזי:</h3>
+        <ul>
+          <li>המוזיאון מונגש כמעט במלואו למתניידים בכיסאות גלגלים.</li>
+          <li>במוזיאון קיימים עזרי שמע לכבדי שמיעה.</li>
+          <li>אנו מציעים הדרכות מותאמות לעיוורים ולקויי ראייה (בתיאום מראש).</li>
+        </ul>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">פרטי רכז/ת נגישות:</h3>
+        <p>
+          אם נתקלתם בקושי כלשהו או שיש לכם בקשה מיוחדת, נשמח לעמוד לשירותכם:<br>
+          <b>שם:</b> [יש להשלים]<br>
+          <b>טלפון:</b> [יש להשלים]<br>
+          <b>דוא"ל:</b> [יש להשלים]<br>
+        </p>
+      </div>
+
+      <hr style="border: 0; border-top: 2px dashed var(--etzel-gold); margin: 30px 0;">
+
+      <div dir="ltr" style="font-size:1.1em; line-height:1.6; text-align: left;">
+        <h1 style="text-align:center; color: var(--etzel-blue);">Accessibility Statement</h1>
+        <p>The Etzel Museum considers it of utmost importance to make the site and the physical museum accessible to people with disabilities, to allow an equal and respectful experience for all visitors.</p>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">Digital Guide Accessibility:</h3>
+        <ul>
+          <li>The site is adapted for keyboard navigation (using the Tab key) and for use with screen readers.</li>
+          <li>The text on the site can be enlarged using the <b>A+</b> button at the bottom of the screen.</li>
+          <li>The site's colors can be changed to <b>high contrast</b> (black background, yellow text) using the contrast button <b>◐</b>.</li>
+          <li>The site contains a built-in Text-to-Speech (TTS) system that reads all exhibits, as well as a recorded audio guide.</li>
+        </ul>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">Physical Museum Accessibility:</h3>
+        <ul>
+          <li>The museum is almost fully accessible for wheelchair users.</li>
+          <li>The museum has hearing aids for the hearing impaired.</li>
+          <li>We offer adapted guided tours for the blind and visually impaired (by prior arrangement).</li>
+        </ul>
+
+        <h3 style="color: var(--etzel-gold); border-bottom: 1px solid #ccc;">Accessibility Coordinator Details:</h3>
+        <p>
+          If you have encountered any difficulty or have a special request, we will be happy to assist you:<br>
+          <b>Name:</b> [To be completed]<br>
+          <b>Phone:</b> [To be completed]<br>
+          <b>Email:</b> [To be completed]<br>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div id="view-exhibits" class="view-section">
+  <div class="sticky-nav" id="numbersBar">
+    <button class="nav-num nav-home" onclick="navTo('home')" aria-label="חזרה לדף הבית">🏠</button>
+  </div>
+  <div id="exhibits-container"></div>
+<div style="text-align:center; margin-top:40px; padding-bottom:80px;"><a class="accessibility-link" onclick="navTo('accessibility')" tabindex="0" role="button">הצהרת נגישות / Accessibility Statement</a></div>
+</div>
+
+<script>
+function createExhibit(id, title, content, audioText = null) {
+    return { id, title, content, audioText };
+}
+
+// Registry of languages that have full exhibit content. Each entry's full
+// data (intro + exhibits) lives in its own data-XX.js file and is only
+// fetched the first time a visitor picks that language, so a visitor never
+// downloads text for languages they don't read.
+const LANG_MANIFEST = {
+  he: { label: 'עברית', meta: { name: 'Hebrew עברית', dir: 'rtl' }, introTitle: 'ברוכים הבאים', file: 'data-he.js', varName: 'DATA_HE' },
+  en: { label: 'English', meta: { name: 'English אנגלית', dir: 'ltr' }, introTitle: 'Welcome', file: 'data-en.js', varName: 'DATA_EN' },
+  ru: { label: 'Русский', meta: { name: 'Russian Русский', dir: 'ltr' }, introTitle: 'Добро пожаловать', file: 'data-ru.js', varName: 'DATA_RU' },
+  da: { label: 'Dansk', meta: { name: 'Danish dansk', dir: 'ltr' }, introTitle: 'Velkommen', file: 'data-da.js', varName: 'DATA_DA' }
+};
+
+// Languages with placeholder translations only (no exhibits yet). Kept
+// separate from LANG_MANIFEST so they never trigger a network fetch or
+// show a card on the home screen until real content is added.
+const STUB_LANGS = {
+  yi: { label: 'יידיש', meta: { name: 'Yiddish יידיש', dir: 'rtl' }, intro: { title: 'ברוכים הבאים', sub: 'באַזוכער פירער אין אצ"ל מוזיי', body: 'מיר זענען צופרידן צו באַלעבאָטן אייך אין דעם מוזיי.', disc: '', btn: 'אָנהייבן רייַזע' }, exhibits: [] },
+  arc: { label: 'ארמית', hidden: true, meta: { name: 'Aramaic ארמית', dir: 'rtl' }, intro: { title: 'ברוכים אתיתון', sub: 'מדריכא למבקרא במוזיאון האצ"ל', body: '', disc: '', btn: 'שרו סיורא' }, exhibits: [] },
+  fr: { label: 'Français', meta: { name: 'French Français', dir: 'ltr' }, intro: { title: 'Bienvenue', sub: '', body: '', disc: '', btn: 'Commencer la visite' }, exhibits: [] },
+  es: { label: 'Español', meta: { name: 'Spanish Español', dir: 'ltr' }, intro: { title: 'Bienvenidos', sub: '', body: '', disc: '', btn: 'Comenzar el recorrido' }, exhibits: [] },
+  de: { label: 'Deutsch', meta: { name: 'German Deutsch', dir: 'ltr' }, intro: { title: 'Willkommen', sub: '', body: '', disc: '', btn: 'Rundgang starten' }, exhibits: [] },
+  ar: { label: 'العربية', meta: { name: 'Arabic العربية', dir: 'rtl' }, intro: { title: 'أهلاً بكم', sub: '', body: '', disc: '', btn: 'ابدأ الجولة' }, exhibits: [] },
+  it: { label: 'Italiano', meta: { name: 'Italian Italiano', dir: 'ltr' }, intro: { title: 'Benvenuti', sub: '', body: '', disc: '', btn: 'Inizia il tour' }, exhibits: [] },
+  pt: { label: 'Português', meta: { name: 'Portuguese Português', dir: 'ltr' }, intro: { title: 'Bem-vindo', sub: '', body: '', disc: '', btn: 'Iniciar o passeio' }, exhibits: [] },
+  nl: { label: 'Nederlands', meta: { name: 'Dutch Nederlands', dir: 'ltr' }, intro: { title: 'Welkom', sub: '', body: '', disc: '', btn: 'Start de rondleiding' }, exhibits: [] },
+  pl: { label: 'Polski', meta: { name: 'Polish Polski', dir: 'ltr' }, intro: { title: 'Witamy', sub: '', body: '', disc: '', btn: 'Rozpocznij wycieczkę' }, exhibits: [] },
+  ua: { label: 'Українська', meta: { name: 'Ukrainian Українська', dir: 'ltr' }, intro: { title: 'Ласкаво просимо', sub: '', body: '', disc: '', btn: 'Розпочати екскурсію' }, exhibits: [] },
+  zh: { label: '中文', meta: { name: 'Chinese 中文', dir: 'ltr' }, intro: { title: '欢迎', sub: '', body: '', disc: '', btn: '开始参观' }, exhibits: [] },
+  ja: { label: '日本語', meta: { name: 'Japanese 日本語', dir: 'ltr' }, intro: { title: 'ようこそ', sub: '', body: '', disc: '', btn: '見学を開始する' }, exhibits: [] },
+  ko: { label: '한국어', meta: { name: 'Korean 한국어', dir: 'ltr' }, intro: { title: '환영합니다', sub: '', body: '', disc: '', btn: '투어 시작하기' }, exhibits: [] },
+  no: { label: 'Norsk', meta: { name: 'Norwegian Norsk', dir: 'ltr' }, intro: { title: 'Velkommen', sub: '', body: '', disc: '', btn: 'Start omvisningen' }, exhibits: [] },
+  sv: { label: 'Svenska', meta: { name: 'Swedish Svenska', dir: 'ltr' }, intro: { title: 'Välkommen', sub: '', body: '', disc: '', btn: 'Starta rundturen' }, exhibits: [] },
+  hi: { label: 'हिन्दी', meta: { name: 'Hindi हिन्दी', dir: 'ltr' }, intro: { title: 'स्वागत है', sub: '', body: '', disc: '', btn: 'दौरा शुरू करें' }, exhibits: [] },
+  ro: { label: 'Română', meta: { name: 'Romanian Română', dir: 'ltr' }, intro: { title: 'Bun venit', sub: '', body: '', disc: '', btn: 'Începeți turul' }, exhibits: [] },
+  el: { label: 'Ελληνικά', meta: { name: 'Greek Ελληνικά', dir: 'ltr' }, intro: { title: 'Καλώς ήρθατε', sub: '', body: '', disc: '', btn: 'Έναρξη περιήγησης' }, exhibits: [] },
+  tr: { label: 'Türkçe', meta: { name: 'Turkish Türkçe', dir: 'ltr' }, intro: { title: 'Hoş geldiniz', sub: '', body: '', disc: '', btn: 'Tura Başla' }, exhibits: [] },
+  hu: { label: 'Magyar', meta: { name: 'Hungarian Magyar', dir: 'ltr' }, intro: { title: 'Üdvözöljük', sub: '', body: '', disc: '', btn: 'Túra indítása' }, exhibits: [] },
+  th: { label: 'ไทย', meta: { name: 'Thai ไทย', dir: 'ltr' }, intro: { title: 'ยินดีต้อนรับ', sub: '', body: '', disc: '', btn: 'เริ่มการทัวร์' }, exhibits: [] },
+  tl: { label: 'Tagalog', meta: { name: 'Filipino Tagalog', dir: 'ltr' }, intro: { title: 'Maligayang pagdating', sub: '', body: '', disc: '', btn: 'Simulan ang Paglilibot' }, exhibits: [] },
+  si: { label: 'සිංහල', meta: { name: 'Sinhala සිංහල', dir: 'ltr' }, intro: { title: 'ආයුබෝවන්', sub: '', body: '', disc: '', btn: 'සංචාරය ආරම්භ කරන්න' }, exhibits: [] }
+};
+
+// Populated on demand: DATA[code] only exists once that language's file has loaded.
+const DATA = {};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initHome();
+
+  document.querySelectorAll('.accessibility-link').forEach(link => {
+    link.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        navTo('accessibility');
+      }
+    });
+  });
+
+  window.addEventListener('resize', updateStickyOffset);
+});
+
+let currentLang = 'he';
+let manualNavLock = false;
+
+const views = {
+  home: document.getElementById('view-home'),
+  intro: document.getElementById('view-intro'),
+  exhibits: document.getElementById('view-exhibits'),
+  accessibility: document.getElementById('view-accessibility')
+};
+
+const ttsBtn = document.getElementById('ttsBtn');
+function toggleContrast() {
+    document.body.classList.toggle('high-contrast-mode');
+    const isHighContrast = document.body.classList.contains('high-contrast-mode');
+    document.getElementById('a11y-announcer').innerText = isHighContrast ? 'מצב ניגודיות גבוהה הופעל' : 'מצב ניגודיות רגיל הופעל';
+}
+
+function initHome() {
+  const grid = document.getElementById('langsGrid');
+  grid.innerHTML = '';
+
+  for (const [code, entry] of Object.entries(LANG_MANIFEST)) {
+    const card = document.createElement('button');
+    card.className = 'lang-card';
+    card.onclick = () => loadLang(code);
+    card.setAttribute('aria-label', `בחר שפה: ${entry.label}`);
+    card.innerHTML = `
+      <div class="lang-label">${entry.label}</div>
+      <div class="card-inner">
+        <div class="museum-name-local">${entry.meta.name.split(' ')[0]}</div>
+        <div class="welcome-msg">${entry.introTitle || 'Welcome'}</div>
+      </div>
+    `;
+    card.setAttribute('data-name', entry.meta.name.toLowerCase());
+    grid.appendChild(card);
+  }
+}
+
+// Loads data-XX.js exactly once per language and caches it in DATA[code].
+function ensureLangData(code) {
+  if (DATA[code]) return Promise.resolve(DATA[code]);
+
+  const manifestEntry = LANG_MANIFEST[code] || STUB_LANGS[code];
+  if (STUB_LANGS[code] && !LANG_MANIFEST[code]) {
+    DATA[code] = STUB_LANGS[code];
+    return Promise.resolve(DATA[code]);
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = LANG_MANIFEST[code].file;
+    script.onload = () => {
+      DATA[code] = window[LANG_MANIFEST[code].varName];
+      resolve(DATA[code]);
+    };
+    script.onerror = () => reject(new Error(`Failed to load ${LANG_MANIFEST[code].file}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function loadLang(code) {
+  const card = event && event.currentTarget;
+  if (card) card.disabled = true;
+
+  let data;
+  try {
+    data = await ensureLangData(code);
+  } catch (err) {
+    console.error(err);
+    if (card) card.disabled = false;
+    alert('שגיאה בטעינת השפה. נסו שוב. / Error loading language. Please try again.');
+    return;
+  }
+  if (card) card.disabled = false;
+
+  currentLang = code;
+  const dir = data.meta.dir;
+
+  document.body.className = dir;
+  document.documentElement.lang = code;
+  document.documentElement.dir = dir;
+
+  const a11yDict = data.a11y || (DATA['en'] && DATA['en'].a11y) || { increaseFont: 'Increase font', ttsPlay: 'Read text', back: 'Back to home' };
+  document.getElementById('fontBtn').setAttribute('aria-label', a11yDict.increaseFont);
+  document.getElementById('ttsBtn').setAttribute('aria-label', a11yDict.ttsPlay);
+  document.querySelector('.btn-back').setAttribute('aria-label', a11yDict.back);
+  views.intro.className = `view-section active ${dir}`;
+
+  document.getElementById('intro-title').innerText = data.intro.title || 'Welcome';
+  document.getElementById('intro-sub').innerText = data.intro.sub || 'Visitor Guide';
+  document.getElementById('intro-body').innerHTML = data.intro.body || 'Welcome to the museum.';
+  document.getElementById('intro-disc').innerText = data.intro.disc || '';
+  document.getElementById('startBtn').innerText = data.intro.btn || 'Start';
+
+  navTo('intro');
+  prepareExhibits(code);
+}
+
+function updateStickyOffset() {
+  const bar = document.getElementById('numbersBar');
+  if (bar && bar.offsetHeight > 0) {
+    document.documentElement.style.setProperty('--sticky-nav-h', bar.offsetHeight + 'px');
+  }
+}
+
+function prepareExhibits(code) {
+  const data = DATA[code];
+  const container = document.getElementById('exhibits-container');
+  const navBar = document.getElementById('numbersBar');
+
+  container.innerHTML = '';
+  navBar.innerHTML = `<button class="nav-num nav-home" onclick="navTo('home')" aria-label="חזרה לדף הבית">🏠</button>`;
+
+  if (window.exhibitObserver) window.exhibitObserver.disconnect();
+
+  window.exhibitObserver = new IntersectionObserver((entries) => {
+      if (manualNavLock) return;
+      entries.forEach(entry => {
+          if (entry.isIntersecting) {
+              document.querySelectorAll('.nav-num').forEach(b => b.classList.remove('active'));
+              const id = entry.target.id.replace('exhibit-', '');
+              const activeBtn = document.querySelector(`.nav-num[data-id="${id}"]`);
+              if (activeBtn) {
+                  activeBtn.classList.add('active');
+                  activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              }
+          }
+      });
+  }, { rootMargin: '-20% 0px -40% 0px' });
+
+  const exhibitsToLoad = (data.exhibits && data.exhibits.length > 0) ? data.exhibits : [];
+
+  if (exhibitsToLoad.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:50px; font-size:1.2em;">התוכן בשפה זו יעודכן בקרוב...<br>Content coming soon...</div>';
+      return;
+  }
+
+  const ui = data.ui || { readBtn: 'Read', audioBtn: 'Audio', stopBtn: 'Stop' };
+
+  exhibitsToLoad.forEach((exhibit, index) => {
+    const item = document.createElement('div');
+    item.className = 'exhibit-item';
+    item.id = `exhibit-${exhibit.id}`;
+
+    let controlsHTML = '<div class="controls-row">';
+    controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
+    if (exhibit.audioText) {
+       controlsHTML += `<button class="audio-guide-btn" onclick="playAudioGuide(${exhibit.id}, this)">🎧 ${ui.audioBtn}</button>`;
+    }
+    controlsHTML += '</div>';
+
+    item.innerHTML = `
+      <div class="exhibit-header">
+          <div class="exhibit-num">#${exhibit.id}</div>
+      </div>
+      <h2 class="exhibit-title">${exhibit.title}</h2>
+      ${controlsHTML}
+      <div class="exhibit-body" id="text-${exhibit.id}">${exhibit.content}</div>
+    `;
+    container.appendChild(item);
+
+    window.exhibitObserver.observe(item);
+
+    const navBtn = document.createElement('button');
+    navBtn.className = 'nav-num';
+
+    if (index === 0) {
+        navBtn.classList.add('active');
+    }
+
+    navBtn.innerText = exhibit.id;
+    navBtn.setAttribute('data-id', exhibit.id);
+    navBtn.setAttribute('aria-label', `מיצג מספר ${exhibit.id}`);
+
+    navBtn.onclick = () => {
+      manualNavLock = true;
+      document.querySelectorAll('.nav-num').forEach(b => b.classList.remove('active'));
+      navBtn.classList.add('active');
+      document.getElementById(`exhibit-${exhibit.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(() => { manualNavLock = false; }, 900);
+    };
+    navBar.appendChild(navBtn);
+  });
+
+  views.exhibits.className = `view-section ${data.meta.dir}`;
+
+  requestAnimationFrame(updateStickyOffset);
+}
+
+function navTo(viewName) {
+  stopAllAudio();
+
+  Object.values(views).forEach(el => {
+    el.style.display = 'none';
+    el.classList.remove('active');
+  });
+
+  const target = views[viewName];
+  target.style.display = 'block';
+  void target.offsetWidth;
+  target.classList.add('active');
+
+  window.scrollTo(0,0);
+  target.setAttribute('tabindex', '-1');
+  target.focus();
+  if (viewName === 'home') {
+    document.body.className = 'ltr';
+    ttsBtn.style.display = 'none';
+  } else if (viewName === 'exhibits') {
+    document.body.className = DATA[currentLang].meta.dir;
+    ttsBtn.style.display = 'none';
+    requestAnimationFrame(updateStickyOffset);
+  } else if (viewName === 'accessibility') {
+    document.body.className = 'rtl';
+    ttsBtn.style.display = 'flex';
+  } else {
+    document.body.className = DATA[currentLang].meta.dir;
+    ttsBtn.style.display = 'flex';
+  }
+}
+
+function filterLangs() {
+  const term = document.getElementById('searchInput').value.toLowerCase();
+
+  if (term === 'סצד"א') {
+    loadLang('arc');
+    return;
+  }
+
+  const cards = document.querySelectorAll('.cards-grid .lang-card');
+  cards.forEach(card => {
+    const name = card.getAttribute('data-name');
+    if (name.includes(term)) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function stopAllAudio() {
+    window.speechSynthesis.cancel();
+    document.querySelectorAll('.audio-guide-btn, .read-text-btn').forEach(b => {
+        b.classList.remove('playing');
+        b.classList.remove('speaking-active');
+        if (b.innerHTML.includes('⏸️')) {
+            if (b.classList.contains('read-text-btn')) b.innerHTML = b.innerHTML.replace('⏸️', '🔈');
+            if (b.classList.contains('audio-guide-btn')) b.innerHTML = b.innerHTML.replace('⏸️', '🎧');
+        }
+    });
+
+    const floatTts = document.getElementById('ttsBtn');
+    if (floatTts) {
+        floatTts.classList.remove('speaking-active');
+        floatTts.innerText = '🔇';
+    }
+}
+
+function speakText(id, btnElement) {
+    if (btnElement.classList.contains('speaking-active')) {
+        stopAllAudio();
+        return;
+    }
+
+    stopAllAudio();
+
+    const textDiv = document.getElementById(`text-${id}`);
+    if (!textDiv) return;
+    const textToRead = textDiv.innerText;
+
+    const u = new SpeechSynthesisUtterance(textToRead);
+    let langToUse = currentLang;
+    if (langToUse === 'arc' || langToUse === 'yi') langToUse = 'he';
+    u.lang = langToUse;
+
+    u.onend = () => {
+        btnElement.classList.remove('speaking-active');
+        btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🔈');
+    };
+
+    window.speechSynthesis.speak(u);
+    btnElement.classList.add('speaking-active');
+    btnElement.innerHTML = btnElement.innerHTML.replace('🔈', '⏸️');
+}
+
+function playAudioGuide(id, btnElement) {
+    if (btnElement.classList.contains('playing')) {
+        stopAllAudio();
+        return;
+    }
+
+    stopAllAudio();
+
+    const currentData = DATA[currentLang];
+    const exhibit = currentData.exhibits.find(e => e.id === id);
+
+    if (!exhibit || !exhibit.audioText) return;
+
+    const u = new SpeechSynthesisUtterance(exhibit.audioText);
+    let langToUse = currentLang;
+    if (langToUse === 'arc' || langToUse === 'yi') langToUse = 'he';
+
+    u.lang = langToUse;
+    u.rate = 0.9;
+
+    u.onend = () => {
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
+    };
+
+    window.speechSynthesis.speak(u);
+    btnElement.classList.add('playing');
+    btnElement.innerHTML = btnElement.innerHTML.replace('🎧', '⏸️');
+}
+
+document.getElementById('ttsBtn').addEventListener('click', () => {
+  const btn = document.getElementById('ttsBtn');
+
+  if (window.speechSynthesis.speaking) {
+    stopAllAudio();
+    return;
+  }
+
+  let text = '';
+  let langToUse = currentLang;
+  if (views.intro.classList.contains('active')) {
+    text = document.getElementById('intro-body').innerText;
+  } else if (views.accessibility.classList.contains('active')) {
+    text = views.accessibility.innerText;
+    langToUse = 'he';
+  }
+
+  if (text) {
+      const u = new SpeechSynthesisUtterance(text);
+      if (langToUse === 'arc' || langToUse === 'yi') langToUse = 'he';
+      u.lang = langToUse;
+
+      u.onend = () => {
+          btn.classList.remove('speaking-active');
+          btn.innerText = '🔇';
+      };
+
+      window.speechSynthesis.speak(u);
+      btn.classList.add('speaking-active');
+      btn.innerText = '⏸️';
+  }
+});
+
+document.getElementById('fontBtn').addEventListener('click', () => {
+    const body = document.body;
+    const current = window.getComputedStyle(body).fontSize;
+    let newSizeMsg = '';
+    if (current === '16px') {
+        body.style.fontSize = '20px';
+        newSizeMsg = 'הטקסט הוגדל';
+    } else {
+        body.style.fontSize = '16px';
+        newSizeMsg = 'הטקסט הוקטן לגודל רגיל';
+    }
+    document.getElementById('a11y-announcer').innerText = newSizeMsg;
+});
+
+window.addEventListener('scroll', () => {
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+        scrollBtn.style.display = 'block';
+    } else {
+        scrollBtn.style.display = 'none';
+    }
+});
+
+function scrollToTop() {
+    manualNavLock = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => { manualNavLock = false; }, 900);
+}
+</script>
+<button id="scrollTopBtn" onclick="scrollToTop()" aria-label="חזרה למעלה" title="חזרה למעלה">↑</button>
+</body>
+</html>

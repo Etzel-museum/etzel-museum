@@ -132,6 +132,23 @@
 
   .controls-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 
+  /* The recording script, shown as text for visitors who can't or don't
+     want to listen — collapsed by default so it adds no visual noise. */
+  .transcript-toggle { margin-top: 8px; }
+  .transcript-toggle summary {
+      cursor: pointer; font-weight: bold; color: var(--etzel-blue);
+      font-size: 0.95em; padding: 4px 0; list-style: revert;
+  }
+  .transcript-toggle summary:hover { color: var(--etzel-gold); }
+  .transcript-text {
+      background: rgba(0,51,102,0.05);
+      border-inline-start: 3px solid var(--etzel-gold);
+      padding: 12px 16px; margin-top: 8px;
+      font-size: 0.95em; line-height: 1.6;
+      white-space: pre-line; border-radius: 4px;
+  }
+  .inline-audio-btn + .transcript-toggle { display: inline-block; vertical-align: middle; margin: 0 8px; }
+
   .audio-guide-btn, .read-text-btn {
     padding: 8px 18px; border-radius: 20px; font-weight: bold; cursor: pointer;
     display: flex; align-items: center; gap: 8px; font-size: 1em; transition: 0.2s;
@@ -670,15 +687,25 @@ function prepareExhibits(code) {
 
     let controlsHTML = '<div class="controls-row">';
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
+    let transcriptsHTML = '';
     if (Array.isArray(exhibit.audioTracks) && exhibit.audioTracks.length > 0) {
+       // A lone track with no transcript of its own falls back to the
+       // exhibit's whole audioText (that's the single-recording case).
+       const soleFallback = exhibit.audioTracks.length === 1 ? exhibit.audioText : null;
        exhibit.audioTracks.forEach(track => {
            controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioTrack('${track.file}', this)" aria-label="${track.label}" aria-pressed="false">🎧</button>`;
+           const transcript = track.transcript || soleFallback;
+           if (transcript) {
+               transcriptsHTML += `<details class="transcript-toggle"><summary>הצג תמלול: ${track.label} / Show transcript</summary><div class="transcript-text">${transcript}</div></details>`;
+           }
        });
     } else if (exhibit.audioTracks === 'inline') {
-       // Real recordings are embedded directly in the content next to their
-       // sub-headings (see data-*.js) — no generic top button needed here.
+       // Real recordings, and their transcript toggles, are embedded
+       // directly in the content next to their sub-headings (see data-*.js)
+       // — nothing to add here.
     } else if (exhibit.audioText) {
        controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioGuide(${exhibit.id}, this)" aria-label="${ui.audioBtn}" aria-pressed="false">🎧</button>`;
+       transcriptsHTML += `<details class="transcript-toggle"><summary>הצג תמלול / Show transcript</summary><div class="transcript-text">${exhibit.audioText}</div></details>`;
     }
     controlsHTML += '</div>';
 
@@ -688,6 +715,7 @@ function prepareExhibits(code) {
       </div>
       <h2 class="exhibit-title">${exhibit.title}</h2>
       ${controlsHTML}
+      ${transcriptsHTML}
       <div class="exhibit-body" id="text-${exhibit.id}">${exhibit.content}</div>
     `;
     container.appendChild(item);

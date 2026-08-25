@@ -55,6 +55,7 @@
   .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; }
 
   .lang-card {
+      position: relative;
       background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
       padding: 0; border-radius: 12px; text-align: center; cursor: pointer;
       border-top: 5px solid var(--etzel-gold); transition: 0.2s;
@@ -63,6 +64,17 @@
   }
   .lang-card:hover { transform: translateY(-5px); background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
   .lang-card:disabled { opacity: 0.6; cursor: wait; }
+
+  @keyframes card-spin { to { transform: rotate(360deg); } }
+  .lang-card.loading .card-inner { opacity: 0.3; }
+  .lang-card.loading::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 28px; height: 28px; margin: -14px 0 0 -14px;
+      border: 3px solid rgba(0,51,102,0.15); border-top-color: var(--etzel-blue);
+      border-radius: 50%; animation: card-spin 0.8s linear infinite;
+  }
+  .lang-card.load-error { border-top-color: #a4433a; }
+  .lang-card.load-error .welcome-msg { color: #a4433a; }
 
   .lang-label {
       background: rgba(0, 51, 102, 0.1); color: var(--etzel-blue);
@@ -95,9 +107,17 @@
       z-index: 9999; display: flex; gap: 12px; align-items: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.4); border-bottom: 2px solid var(--etzel-gold);
   }
-  .nav-num { width: 40px; height: 40px; background: rgba(255,255,255,0.15); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: 0.2s; border: 1px solid rgba(255,255,255,0.3); font-family: inherit; font-size: 1em; }
+  .nav-num { position: relative; width: 40px; height: 40px; background: rgba(255,255,255,0.15); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: 0.2s; border: 1px solid rgba(255,255,255,0.3); font-family: inherit; font-size: 1em; }
 
   .nav-num.active { background: var(--etzel-gold); color: black; border-color: white; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+  /* Small dot marking an exhibit already viewed this session/device. */
+  .nav-num.visited::after {
+      content: ''; position: absolute; bottom: 1px; inset-inline-end: 1px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--etzel-gold); border: 1.5px solid var(--etzel-blue);
+  }
+  .nav-num.active.visited::after { border-color: white; }
 
   #exhibits-container { padding-bottom: 70vh; }
   .exhibit-item {
@@ -128,13 +148,15 @@
 
   .inline-audio-btn {
     display: inline-flex; vertical-align: middle;
-    padding: 4px 9px; margin: 0 8px; font-size: 0.7em;
+    min-width: 36px; min-height: 36px;
+    padding: 6px 10px; margin: 0 8px; font-size: 0.75em;
     border-radius: 50%; font-weight: bold; cursor: pointer;
     align-items: center; justify-content: center;
   }
 
   .audio-guide-btn.icon-only {
-    padding: 8px 12px;
+    min-width: 44px; min-height: 44px;
+    padding: 10px 14px;
   }
 
   .map-placeholder { display: none; }
@@ -255,7 +277,7 @@
 </style>
 </head>
 <body>
-<a href="#exhibits-container" class="skip-link">דלג לתוכן המרכזי</a>
+<a href="#" class="skip-link" onclick="skipToMain(event)">דלג לתוכן המרכזי</a>
 
 <div id="a11y-announcer" aria-live="polite" style="position:absolute; width:1px; height:1px; overflow:hidden;"></div>
 <div class="floating-controls">
@@ -291,6 +313,9 @@
         <a href="mailto:YOUR_EMAIL@GMAIL.COM" style="font-weight:bold; color:var(--etzel-blue);">[Email]</a>
       </div>
       <button class="big-btn" id="startBtn" onclick="navTo('exhibits')"></button>
+      <div id="resumeRow" style="display:none; text-align:center; margin-top:14px;">
+        <a onclick="resumeTour(event)" role="button" tabindex="0">המשך מאיפה שהפסקת (מיצג #<span id="resumeNum"></span>) / Resume where you left off</a>
+      </div>
 <div style="text-align:center; margin-top:40px; padding-bottom:30px;"><a class="accessibility-link" onclick="navTo('accessibility')" tabindex="0" role="button">הצהרת נגישות / Accessibility Statement</a></div>
     </div>
   </div>
@@ -418,6 +443,27 @@ const STUB_LANGS = {
 // Populated on demand: DATA[code] only exists once that language's file has loaded.
 const DATA = {};
 
+// Per-language tour progress (which exhibits were seen, and the last one),
+// kept in localStorage so a returning visitor can pick up where they left off.
+function getProgress(lang) {
+  try {
+    const all = JSON.parse(localStorage.getItem('etzel_progress') || '{}');
+    return all[lang] || { visited: [], last: null };
+  } catch (e) {
+    return { visited: [], last: null };
+  }
+}
+function saveProgress(lang, exhibitId) {
+  try {
+    const all = JSON.parse(localStorage.getItem('etzel_progress') || '{}');
+    const entry = all[lang] || { visited: [], last: null };
+    if (!entry.visited.includes(exhibitId)) entry.visited.push(exhibitId);
+    entry.last = exhibitId;
+    all[lang] = entry;
+    localStorage.setItem('etzel_progress', JSON.stringify(all));
+  } catch (e) { /* localStorage unavailable — progress just won't persist */ }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
 
@@ -460,10 +506,10 @@ function initHome() {
     card.onclick = () => loadLang(code);
     card.setAttribute('aria-label', `בחר שפה: ${entry.label}`);
     card.innerHTML = `
-      <div class="lang-label">${entry.label}</div>
+      <div class="lang-label" lang="${code}">${entry.label}</div>
       <div class="card-inner">
-        <div class="museum-name-local">${entry.meta.name.split(' ')[0]}</div>
-        <div class="welcome-msg">${entry.introTitle || 'Welcome'}</div>
+        <div class="museum-name-local" lang="${code}">${entry.meta.name.split(' ')[0]}</div>
+        <div class="welcome-msg" lang="${code}">${entry.introTitle || 'Welcome'}</div>
       </div>
     `;
     card.setAttribute('data-name', entry.meta.name.toLowerCase());
@@ -495,18 +541,35 @@ function ensureLangData(code) {
 
 async function loadLang(code) {
   const card = event && event.currentTarget;
-  if (card) card.disabled = true;
+  if (card) {
+    card.disabled = true;
+    card.classList.remove('load-error');
+    card.classList.add('loading');
+  }
 
   let data;
   try {
     data = await ensureLangData(code);
   } catch (err) {
     console.error(err);
-    if (card) card.disabled = false;
-    alert('שגיאה בטעינת השפה. נסו שוב. / Error loading language. Please try again.');
+    if (card) {
+      card.disabled = false;
+      card.classList.remove('loading');
+      card.classList.add('load-error');
+      const msg = card.querySelector('.welcome-msg');
+      if (msg) {
+        if (!card.dataset.origMsg) card.dataset.origMsg = msg.innerText;
+        msg.innerText = 'שגיאה — הקש לנסות שוב / Error — tap to retry';
+      }
+    }
     return;
   }
-  if (card) card.disabled = false;
+  if (card) {
+    card.disabled = false;
+    card.classList.remove('loading', 'load-error');
+    const msg = card.querySelector('.welcome-msg');
+    if (msg && card.dataset.origMsg) msg.innerText = card.dataset.origMsg;
+  }
 
   currentLang = code;
   const dir = data.meta.dir;
@@ -529,6 +592,32 @@ async function loadLang(code) {
 
   navTo('intro');
   prepareExhibits(code);
+
+  const progress = getProgress(code);
+  const resumeRow = document.getElementById('resumeRow');
+  if (progress.last && data.exhibits && data.exhibits.length > 1) {
+    document.getElementById('resumeNum').innerText = progress.last;
+    resumeRow.style.display = 'block';
+  } else {
+    resumeRow.style.display = 'none';
+  }
+}
+
+// Jumps straight into the exhibits view at the last exhibit this visitor
+// (this browser) viewed for the current language, instead of always #1.
+function resumeTour(e) {
+  if (e) e.preventDefault();
+  const progress = getProgress(currentLang);
+  navTo('exhibits');
+  if (progress.last) {
+    manualNavLock = true;
+    document.querySelectorAll('.nav-num').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.nav-num[data-id="${progress.last}"]`);
+    if (btn) btn.classList.add('active');
+    const target = document.getElementById(`exhibit-${progress.last}`);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => { manualNavLock = false; }, 900);
+  }
 }
 
 function updateStickyOffset() {
@@ -556,8 +645,9 @@ function prepareExhibits(code) {
               const id = entry.target.id.replace('exhibit-', '');
               const activeBtn = document.querySelector(`.nav-num[data-id="${id}"]`);
               if (activeBtn) {
-                  activeBtn.classList.add('active');
+                  activeBtn.classList.add('active', 'visited');
                   activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                  saveProgress(code, id);
               }
           }
       });
@@ -571,6 +661,7 @@ function prepareExhibits(code) {
   }
 
   const ui = data.ui || { readBtn: 'Read', audioBtn: 'Audio', stopBtn: 'Stop' };
+  const progress = getProgress(code);
 
   exhibitsToLoad.forEach((exhibit, index) => {
     const item = document.createElement('div');
@@ -581,13 +672,13 @@ function prepareExhibits(code) {
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
     if (Array.isArray(exhibit.audioTracks) && exhibit.audioTracks.length > 0) {
        exhibit.audioTracks.forEach(track => {
-           controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioTrack('${track.file}', this)" aria-label="${track.label}">🎧</button>`;
+           controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioTrack('${track.file}', this)" aria-label="${track.label}" aria-pressed="false">🎧</button>`;
        });
     } else if (exhibit.audioTracks === 'inline') {
        // Real recordings are embedded directly in the content next to their
        // sub-headings (see data-*.js) — no generic top button needed here.
     } else if (exhibit.audioText) {
-       controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioGuide(${exhibit.id}, this)" aria-label="${ui.audioBtn}">🎧</button>`;
+       controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioGuide(${exhibit.id}, this)" aria-label="${ui.audioBtn}" aria-pressed="false">🎧</button>`;
     }
     controlsHTML += '</div>';
 
@@ -609,6 +700,9 @@ function prepareExhibits(code) {
     if (index === 0) {
         navBtn.classList.add('active');
     }
+    if (progress.visited.includes(String(exhibit.id))) {
+        navBtn.classList.add('visited');
+    }
 
     navBtn.innerText = exhibit.id;
     navBtn.setAttribute('data-id', exhibit.id);
@@ -617,8 +711,9 @@ function prepareExhibits(code) {
     navBtn.onclick = () => {
       manualNavLock = true;
       document.querySelectorAll('.nav-num').forEach(b => b.classList.remove('active'));
-      navBtn.classList.add('active');
+      navBtn.classList.add('active', 'visited');
       document.getElementById(`exhibit-${exhibit.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      saveProgress(code, String(exhibit.id));
       setTimeout(() => { manualNavLock = false; }, 900);
     };
     navBar.appendChild(navBtn);
@@ -627,6 +722,26 @@ function prepareExhibits(code) {
   views.exhibits.className = `view-section ${data.meta.dir}`;
 
   requestAnimationFrame(updateStickyOffset);
+}
+
+// Jumps to the main content of whichever screen is currently visible,
+// instead of a fixed target that's only meaningful on the exhibits screen.
+function skipToMain(e) {
+  e.preventDefault();
+  let target;
+  if (views.exhibits.classList.contains('active')) {
+    target = document.getElementById('exhibits-container');
+  } else if (views.home.classList.contains('active')) {
+    target = document.getElementById('langsGrid');
+  } else if (views.intro.classList.contains('active')) {
+    target = document.querySelector('#view-intro .glass-card');
+  } else if (views.accessibility.classList.contains('active')) {
+    target = document.querySelector('#view-accessibility .glass-card');
+  }
+  if (target) {
+    target.setAttribute('tabindex', '-1');
+    target.focus();
+  }
 }
 
 function navTo(viewName) {
@@ -691,6 +806,7 @@ function stopAllAudio() {
     document.querySelectorAll('.audio-guide-btn, .read-text-btn').forEach(b => {
         b.classList.remove('playing');
         b.classList.remove('speaking-active');
+        if (b.classList.contains('audio-guide-btn')) b.setAttribute('aria-pressed', 'false');
         if (b.innerHTML.includes('⏸️')) {
             if (b.classList.contains('read-text-btn')) b.innerHTML = b.innerHTML.replace('⏸️', '🔈');
             if (b.classList.contains('audio-guide-btn')) b.innerHTML = b.innerHTML.replace('⏸️', '🎧');
@@ -718,17 +834,20 @@ function playAudioTrack(fileUrl, btnElement) {
     const audio = new Audio(fileUrl);
     audio.onended = () => {
         btnElement.classList.remove('playing');
+        btnElement.setAttribute('aria-pressed', 'false');
         btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
         activeAudioEl = null;
     };
     audio.onerror = () => {
         btnElement.classList.remove('playing');
+        btnElement.setAttribute('aria-pressed', 'false');
         btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
         activeAudioEl = null;
     };
     audio.play().catch(() => {});
     activeAudioEl = audio;
     btnElement.classList.add('playing');
+    btnElement.setAttribute('aria-pressed', 'true');
     btnElement.innerHTML = btnElement.innerHTML.replace('🎧', '⏸️');
 }
 
@@ -781,11 +900,13 @@ function playAudioGuide(id, btnElement) {
 
     u.onend = () => {
         btnElement.classList.remove('playing');
+        btnElement.setAttribute('aria-pressed', 'false');
         btnElement.innerHTML = btnElement.innerHTML.replace('⏸️', '🎧');
     };
 
     window.speechSynthesis.speak(u);
     btnElement.classList.add('playing');
+    btnElement.setAttribute('aria-pressed', 'true');
     btnElement.innerHTML = btnElement.innerHTML.replace('🎧', '⏸️');
 }
 

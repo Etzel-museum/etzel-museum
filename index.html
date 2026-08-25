@@ -123,6 +123,13 @@
 
   .exhibit-body { font-size: 1.1em; line-height: 1.6; margin-top: 15px; }
 
+  .inline-audio-btn {
+    display: inline-flex; vertical-align: middle;
+    padding: 3px 12px; margin: 0 8px; font-size: 0.6em;
+    border-radius: 20px; font-weight: bold; cursor: pointer;
+    align-items: center; gap: 5px;
+  }
+
   .map-placeholder { display: none; }
 
   .rtl { direction: rtl; } .ltr { direction: ltr; }
@@ -564,10 +571,13 @@ function prepareExhibits(code) {
 
     let controlsHTML = '<div class="controls-row">';
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
-    if (exhibit.audioTracks && exhibit.audioTracks.length > 0) {
+    if (Array.isArray(exhibit.audioTracks) && exhibit.audioTracks.length > 0) {
        exhibit.audioTracks.forEach(track => {
            controlsHTML += `<button class="audio-guide-btn" onclick="playAudioTrack('${track.file}', this)">🎧 ${track.label}</button>`;
        });
+    } else if (exhibit.audioTracks === 'inline') {
+       // Real recordings are embedded directly in the content next to their
+       // sub-headings (see data-*.js) — no generic top button needed here.
     } else if (exhibit.audioText) {
        controlsHTML += `<button class="audio-guide-btn" onclick="playAudioGuide(${exhibit.id}, this)">🎧 ${ui.audioBtn}</button>`;
     }

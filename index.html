@@ -453,7 +453,15 @@ const LANG_MANIFEST = {
   he: { label: 'עברית', meta: { name: 'Hebrew עברית', dir: 'rtl' }, introTitle: 'ברוכים הבאים', file: 'data-he.js', varName: 'DATA_HE' },
   en: { label: 'English', meta: { name: 'English אנגלית', dir: 'ltr' }, introTitle: 'Welcome', file: 'data-en.js', varName: 'DATA_EN' },
   ru: { label: 'Русский', meta: { name: 'Russian Русский', dir: 'ltr' }, introTitle: 'Добро пожаловать', file: 'data-ru.js', varName: 'DATA_RU' },
-  da: { label: 'Dansk', meta: { name: 'Danish dansk', dir: 'ltr' }, introTitle: 'Velkommen', file: 'data-da.js', varName: 'DATA_DA' }
+  da: { label: 'Dansk', meta: { name: 'Danish dansk', dir: 'ltr' }, introTitle: 'Velkommen', file: 'data-da.js', varName: 'DATA_DA' },
+  // Fully translated but not yet publicly launched — kept out of the home
+  // grid via `hidden: true` (see initHome) until the site owner reviews
+  // and decides to reveal them.
+  es: { label: 'Español', hidden: true, meta: { name: 'Spanish Español', dir: 'ltr' }, introTitle: 'Bienvenidos', file: 'data-es.js', varName: 'DATA_ES' },
+  fr: { label: 'Français', hidden: true, meta: { name: 'French Français', dir: 'ltr' }, introTitle: 'Bienvenue', file: 'data-fr.js', varName: 'DATA_FR' },
+  de: { label: 'Deutsch', hidden: true, meta: { name: 'German Deutsch', dir: 'ltr' }, introTitle: 'Willkommen', file: 'data-de.js', varName: 'DATA_DE' },
+  nl: { label: 'Nederlands', hidden: true, meta: { name: 'Dutch Nederlands', dir: 'ltr' }, introTitle: 'Welkom', file: 'data-nl.js', varName: 'DATA_NL' },
+  ar: { label: 'العربية', hidden: true, meta: { name: 'Arabic العربية', dir: 'rtl' }, introTitle: 'أهلاً بكم', file: 'data-ar.js', varName: 'DATA_AR' }
 };
 
 // Languages with placeholder translations only (no exhibits yet). Kept
@@ -532,13 +540,8 @@ const STUB_LANGS = {
         null
       )
     ] },
-  fr: { label: 'Français', meta: { name: 'French Français', dir: 'ltr' }, intro: { title: 'Bienvenue', sub: '', body: '', disc: '', btn: 'Commencer la visite' }, exhibits: [] },
-  es: { label: 'Español', meta: { name: 'Spanish Español', dir: 'ltr' }, intro: { title: 'Bienvenidos', sub: '', body: '', disc: '', btn: 'Comenzar el recorrido' }, exhibits: [] },
-  de: { label: 'Deutsch', meta: { name: 'German Deutsch', dir: 'ltr' }, intro: { title: 'Willkommen', sub: '', body: '', disc: '', btn: 'Rundgang starten' }, exhibits: [] },
-  ar: { label: 'العربية', meta: { name: 'Arabic العربية', dir: 'rtl' }, intro: { title: 'أهلاً بكم', sub: '', body: '', disc: '', btn: 'ابدأ الجولة' }, exhibits: [] },
   it: { label: 'Italiano', meta: { name: 'Italian Italiano', dir: 'ltr' }, intro: { title: 'Benvenuti', sub: '', body: '', disc: '', btn: 'Inizia il tour' }, exhibits: [] },
   pt: { label: 'Português', meta: { name: 'Portuguese Português', dir: 'ltr' }, intro: { title: 'Bem-vindo', sub: '', body: '', disc: '', btn: 'Iniciar o passeio' }, exhibits: [] },
-  nl: { label: 'Nederlands', meta: { name: 'Dutch Nederlands', dir: 'ltr' }, intro: { title: 'Welkom', sub: '', body: '', disc: '', btn: 'Start de rondleiding' }, exhibits: [] },
   pl: { label: 'Polski', meta: { name: 'Polish Polski', dir: 'ltr' }, intro: { title: 'Witamy', sub: '', body: '', disc: '', btn: 'Rozpocznij wycieczkę' }, exhibits: [] },
   ua: { label: 'Українська', meta: { name: 'Ukrainian Українська', dir: 'ltr' }, intro: { title: 'Ласкаво просимо', sub: '', body: '', disc: '', btn: 'Розпочати екскурсію' }, exhibits: [] },
   zh: { label: '中文', meta: { name: 'Chinese 中文', dir: 'ltr' }, intro: { title: '欢迎', sub: '', body: '', disc: '', btn: '开始参观' }, exhibits: [] },
@@ -627,6 +630,7 @@ function initHome() {
   grid.innerHTML = '';
 
   for (const [code, entry] of Object.entries(LANG_MANIFEST)) {
+    if (entry.hidden) continue;
     const card = document.createElement('button');
     card.className = 'lang-card';
     card.onclick = () => loadLang(code);

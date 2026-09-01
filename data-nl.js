@@ -18,7 +18,7 @@ window.DATA_NL = {
       title: 'Welkom',
       sub: 'Bezoekersgids voor het "Etzel" Museum',
       body: 'Wij verwelkomen u graag in het museum. Deze site dient als uw persoonlijke gids tijdens het bezoek.<br><br><strong>Hoe gebruikt u de gids?</strong><br>Klik op de knop hieronder om te beginnen. Op de volgende pagina vindt u alle tentoonstellingen genummerd volgens de route van de rondleiding. Door op een nummer in de bovenste balk te klikken, komt u direct bij de uitleg.<br><br><strong>Audio-opties:</strong><br>🎧 <strong>Audiogids:</strong> Beluister het uitgebreide verhaal.<br>🔈 <strong>Tekst lezen:</strong> Tekst-naar-spraak voor de inhoud op het scherm.',
-      disc: 'De vertaling op deze site is bedoeld om de bezoekerservaring te verbeteren en komt niet noodzakelijk exact overeen met de originele teksten in het museum. Als u een fout vindt, kunt u gerust een suggestie ter verbetering sturen naar het e-mailadres.',
+      disc: 'De vertaling op deze site is bedoeld om de bezoekerservaring te verbeteren en komt niet noodzakelijk exact overeen met de originele teksten in het museum. Als u een fout vindt, kunt u gerust een suggestie ter verbetering sturen naar het volgende e-mailadres: <a href="mailto:audiogidi48@gmail.com">audiogidi48@gmail.com</a>',
       btn: 'Start rondleiding'
     },
     exhibits: [

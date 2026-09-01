@@ -18,7 +18,7 @@ window.DATA_ES = {
       title: 'Bienvenidos',
       sub: 'Guía del visitante del Museo del Etzel',
       body: 'Nos complace recibirlos en el museo. Este sitio será su guía personal durante el recorrido.<br><br><strong>¿Cómo se usa la guía?</strong><br>Pulse el botón de abajo para comenzar el recorrido. En la página que se abrirá encontrará todos los objetos numerados según el orden del recorrido. Al pulsar el número en la barra superior accederá directamente a la explicación.<br><br><strong>Opciones de audio:</strong><br>🎧 <strong>Audioguía:</strong> Escuche el relato ampliado.<br>🔈 <strong>Lectura de texto:</strong> Lectura en voz alta del texto que aparece en la pantalla (accesibilidad).',
-      disc: 'La traducción de este sitio tiene como fin mejorar la experiencia del visitante y no coincide necesariamente con los textos originales del museo. Si encuentra algún error, no dude en enviar su sugerencia de mejora a la dirección de correo electrónico.',
+      disc: 'La traducción de este sitio tiene como fin mejorar la experiencia del visitante y no coincide necesariamente con los textos originales del museo. Si encuentra algún error, no dude en enviar su sugerencia de mejora a la siguiente dirección de correo electrónico: <a href="mailto:audiogidi48@gmail.com">audiogidi48@gmail.com</a>',
       btn: 'Comenzar el recorrido'
     },
     exhibits: [

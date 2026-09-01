@@ -18,7 +18,7 @@ window.DATA_EN = {
     title: 'Welcome',
     sub: 'Visitor Guide to the "Etzel" Museum',
     body: 'We are delighted to host you at the museum. This site will serve as your personal guide during the tour.<br><br><strong>How to use the guide?</strong><br>Click the button below to start. On the next page, you will find all exhibits numbered according to the tour route. Clicking a number on the top bar will take you directly to the explanation.<br><br><strong>Audio Options:</strong><br>🎧 <strong>Audio Guide:</strong> Hear the extended story.<br>🔈 <strong>Read Text:</strong> Text-to-speech for the content displayed on the screen.',
-    disc: 'The translation on this site is intended to enhance the visitor experience. In cases of discrepancy, the original texts in the museum are the determining factor.',
+    disc: 'The translation on this site is intended to enhance the visitor experience. In cases of discrepancy, the original texts in the museum are the determining factor. If you find an error, feel free to send a suggestion for improvement to the following email address: <a href="mailto:audiogidi48@gmail.com">audiogidi48@gmail.com</a>',
     btn: 'Start Tour'
   },
   exhibits: [

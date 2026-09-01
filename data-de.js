@@ -18,7 +18,7 @@ window.DATA_DE = {
       title: 'Willkommen',
       sub: 'Besucherführer für das Etzel-Museum',
       body: 'Wir freuen uns, Sie im Museum begrüßen zu dürfen. Diese Website dient Ihnen während des Rundgangs als persönlicher Guide.<br><br><strong>Wie benutzt man den Guide?</strong><br>Klicken Sie auf die Schaltfläche unten, um zu beginnen. Auf der nächsten Seite finden Sie alle Ausstellungsstücke, nummeriert entsprechend der Route des Rundgangs. Ein Klick auf die Nummer in der oberen Leiste führt Sie direkt zur Erklärung.<br><br><strong>Audio-Optionen:</strong><br>🎧 <strong>Audioguide:</strong> Hören Sie die ausführliche Geschichte.<br>🔈 <strong>Text vorlesen:</strong> Vorlesefunktion für den auf dem Bildschirm angezeigten Text (Barrierefreiheit).',
-      disc: 'Die Übersetzung auf dieser Website soll das Besuchserlebnis verbessern und stimmt nicht zwangsläufig genau mit den Originaltexten im Museum überein. Wenn Sie einen Fehler finden, senden Sie uns gerne einen Verbesserungsvorschlag an die unten stehende E-Mail-Adresse.',
+      disc: 'Die Übersetzung auf dieser Website soll das Besuchserlebnis verbessern und stimmt nicht zwangsläufig genau mit den Originaltexten im Museum überein. Wenn Sie einen Fehler finden, senden Sie uns gerne einen Verbesserungsvorschlag an folgende E-Mail-Adresse: <a href="mailto:audiogidi48@gmail.com">audiogidi48@gmail.com</a>',
       btn: 'Rundgang starten'
     },
     exhibits: [

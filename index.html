@@ -714,7 +714,7 @@ async function loadLang(code) {
   document.getElementById('intro-title').innerText = data.intro.title || 'Welcome';
   document.getElementById('intro-sub').innerText = data.intro.sub || 'Visitor Guide';
   document.getElementById('intro-body').innerHTML = data.intro.body || 'Welcome to the museum.';
-  document.getElementById('intro-disc').innerText = data.intro.disc || '';
+  document.getElementById('intro-disc').innerHTML = data.intro.disc || '';
   document.getElementById('startBtn').innerText = data.intro.btn || 'Start';
 
   navTo('intro');

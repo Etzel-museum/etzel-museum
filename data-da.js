@@ -18,7 +18,7 @@ window.DATA_DA = {
       title: 'Velkommen',
       sub: 'Besøgsguide til "Etzel" Museet',
       body: 'Vi er glade for at byde dig velkommen til museet. Denne side fungerer som din personlige guide under turen.<br><br><strong>Hvordan bruger man guiden?</strong><br>Klik på knappen nedenfor for at starte. På den næste side finder du alle udstillinger nummereret efter rundvisningens rækkefølge. Et klik på et nummer i topbjælken vil tage dig direkte til forklaringen.<br><br><strong>Lydmuligheder:</strong><br>🎧 <strong>Audioguide:</strong> Hør den udvidede historie.<br>🔈 <strong>Læs tekst:</strong> Tekst-til-tale for indholdet vist på skærmen.',
-      disc: 'Oversættelsen på dette site er beregnet til at forbedre besøgsoplevelsen. I tilfælde af uoverensstemmelser er de originale tekster i museet de gældende.',
+      disc: 'Oversættelsen på dette site er beregnet til at forbedre besøgsoplevelsen. I tilfælde af uoverensstemmelser er de originale tekster i museet de gældende. Hvis du finder en fejl, er du velkommen til at sende et forslag til forbedring til følgende e-mailadresse: <a href="mailto:audiogidi48@gmail.com">audiogidi48@gmail.com</a>',
       btn: 'Start rundvisning'
     },
     exhibits: [

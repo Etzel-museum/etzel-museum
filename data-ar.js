@@ -4,7 +4,8 @@ window.DATA_AR = {
     ui: {
       readBtn: 'قراءة النص',
       audioBtn: 'الدليل الصوتي',
-      stopBtn: 'إيقاف'
+      stopBtn: 'إيقاف',
+      resume: 'المتابعة من حيث توقفت (المعرض رقم {num})'
     },
     a11y: {
       search: 'البحث عن لغة',

@@ -4,7 +4,8 @@ window.DATA_EN = {
   ui: {
     readBtn: 'Read Text',
     audioBtn: 'Audio Guide',
-    stopBtn: 'Stop'
+    stopBtn: 'Stop',
+    resume: 'Resume where you left off (exhibit #{num})'
   },
   a11y: {
     search: 'Search language',

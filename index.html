@@ -372,7 +372,7 @@
       </div>
       <button class="big-btn" id="startBtn" onclick="navTo('exhibits')"></button>
       <div id="resumeRow" style="display:none; text-align:center; margin-top:14px;">
-        <a onclick="resumeTour(event)" role="button" tabindex="0">המשך מאיפה שהפסקת (מיצג #<span id="resumeNum"></span>) / Resume where you left off</a>
+        <a onclick="resumeTour(event)" role="button" tabindex="0" id="resumeLink"></a>
       </div>
 <div style="text-align:center; margin-top:40px; padding-bottom:30px;"><a class="accessibility-link" onclick="navTo('accessibility')" tabindex="0" role="button">הצהרת נגישות / Accessibility Statement</a></div>
     </div>
@@ -443,6 +443,11 @@ function createExhibit(id, title, content, audioText = null, audioTracks = null)
     return { id, title, content, audioText, audioTracks };
 }
 
+// "Resume where you left off" is always shown in English plus whichever
+// language is active (see loadLang), so it stays readable even if the
+// visitor doesn't read Hebrew — this is the fixed English half of that pair.
+const RESUME_EN_TEMPLATE = 'Resume where you left off (exhibit #{num})';
+
 // Registry of languages that have full exhibit content. Each entry's full
 // data (intro + exhibits) lives in its own data-XX.js file and is only
 // fetched the first time a visitor picks that language, so a visitor never
@@ -465,7 +470,7 @@ const LANG_MANIFEST = {
 const STUB_LANGS = {
   yi: { label: 'יידיש', meta: { name: 'Yiddish יידיש', dir: 'rtl' }, intro: { title: 'ברוכים הבאים', sub: 'באַזוכער פירער אין אצ"ל מוזיי', body: 'מיר זענען צופרידן צו באַלעבאָטן אייך אין דעם מוזיי.', disc: '', btn: 'אָנהייבן רייַזע' }, exhibits: [] },
   arc: { label: 'ארמית', hidden: true, meta: { name: 'Aramaic ארמית', dir: 'rtl' },
-    ui: { readBtn: 'קְרִי', audioBtn: 'מַדְרִיכָא קָלָנָאָה', stopBtn: 'אֲבַטִּיל' },
+    ui: { readBtn: 'קְרִי', audioBtn: 'מַדְרִיכָא קָלָנָאָה', stopBtn: 'אֲבַטִּיל', resume: 'אֲהַדַּר לַאֲתַר דְּפְסַקִית (מִיצְגָא #{num})' },
     intro: { title: 'ברוכים אתיתון', sub: 'מדריכא למבקרא במוזיאון האצ"ל', body: '', disc: '', btn: 'שרו סיורא' },
     exhibits: [
       createExhibit(1, '1. עֲמִיחַי פָּאגְלִין (גִּידִי)',
@@ -721,7 +726,10 @@ async function loadLang(code) {
   const progress = getProgress(code);
   const resumeRow = document.getElementById('resumeRow');
   if (progress.last && data.exhibits && data.exhibits.length > 1) {
-    document.getElementById('resumeNum').innerText = progress.last;
+    const enText = RESUME_EN_TEMPLATE.replace('{num}', progress.last);
+    const localTemplate = (data.ui && data.ui.resume) || RESUME_EN_TEMPLATE;
+    const localText = localTemplate.replace('{num}', progress.last);
+    document.getElementById('resumeLink').innerText = (code === 'en') ? enText : `${enText} / ${localText}`;
     resumeRow.style.display = 'block';
   } else {
     resumeRow.style.display = 'none';

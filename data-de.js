@@ -4,7 +4,8 @@ window.DATA_DE = {
     ui: {
       readBtn: 'Text vorlesen',
       audioBtn: 'Audioguide',
-      stopBtn: 'Stopp'
+      stopBtn: 'Stopp',
+      resume: 'Dort weitermachen, wo Sie aufgehört haben (Ausstellung Nr. {num})'
     },
     a11y: {
       search: 'Sprache suchen',

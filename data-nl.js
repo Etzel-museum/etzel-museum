@@ -4,7 +4,8 @@ window.DATA_NL = {
     ui: {
       readBtn: 'Tekst lezen',
       audioBtn: 'Audiogids',
-      stopBtn: 'Stop'
+      stopBtn: 'Stop',
+      resume: 'Verdergaan waar u gebleven was (tentoonstelling nr. {num})'
     },
     a11y: {
       search: 'Taal zoeken',

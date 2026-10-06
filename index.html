@@ -450,6 +450,95 @@ function createExhibit(id, title, content, audioText = null, audioTracks = null)
 // visitor doesn't read Hebrew — this is the fixed English half of that pair.
 const RESUME_EN_TEMPLATE = 'Resume where you left off (exhibit #{num})';
 
+// Label on the collapsible transcript toggles. English is always shown plus
+// the active language (each language file supplies ui.transcript). English
+// alone for English; Hebrew keeps its existing Hebrew-first order so it
+// matches the toggles embedded inside the Hebrew exhibit content.
+const TRANSCRIPT_EN = 'Show transcript';
+
+// English plus the active language (English alone for English). Hebrew keeps
+// its Hebrew-first order, matching the toggles embedded in Hebrew content.
+function pairText(code, en, local) {
+    local = local || en;
+    if (code === 'en') return en;
+    if (code === 'he') return `${local} / ${en}`;
+    return `${en} / ${local}`;
+}
+
+function transcriptLabel(code, ui, trackLabel) {
+    const local = (ui && ui.transcript) || TRANSCRIPT_EN;
+    const suffix = trackLabel ? `: ${trackLabel}` : '';   // track names are already in the page language
+    if (code === 'en') return TRANSCRIPT_EN + suffix;
+    if (code === 'he') return `${local}${suffix} / ${TRANSCRIPT_EN}`;
+    return `${TRANSCRIPT_EN} / ${local}${suffix}`;
+}
+
+// Interface strings every language file may override in its a11y block.
+// English is the fallback, so a language missing a key stays usable.
+const CHROME_EN = {
+    skip: 'Skip to main content',
+    contrast: 'Toggle high contrast',
+    contrastOn: 'High contrast on',
+    contrastOff: 'Normal contrast restored',
+    fontLarger: 'Text enlarged',
+    fontReset: 'Text size reset',
+    exhibitN: 'Exhibit {num}',
+    scrollTop: 'Back to top',
+    accessibilityLink: 'Accessibility Statement',
+    backShort: 'Back'
+};
+// Before a language is chosen the home screen is the Hebrew/English one.
+let chromeLocal = {
+    contrastOn: 'מצב ניגודיות גבוהה הופעל',
+    contrastOff: 'מצב ניגודיות רגיל הופעל',
+    fontLarger: 'הטקסט הוגדל',
+    fontReset: 'הטקסט הוקטן לגודל רגיל'
+};
+function chrome(key) { return chromeLocal[key] || CHROME_EN[key]; }
+
+function applyChrome(code, a11y) {
+    chromeLocal = a11y || {};
+    const visible = key => pairText(code, CHROME_EN[key], chromeLocal[key]);
+    const skip = document.querySelector('.skip-link');
+    if (skip) skip.innerText = visible('skip');
+    document.getElementById('contrastBtn').setAttribute('aria-label', chrome('contrast'));
+    const top = document.getElementById('scrollTopBtn');
+    top.setAttribute('aria-label', chrome('scrollTop'));
+    top.setAttribute('title', chrome('scrollTop'));
+    const back = document.querySelector('#view-intro .btn-back');
+    if (back) back.innerText = '✕ ' + visible('backShort');
+    ['intro', 'exhibits'].forEach(v => {
+        const link = views[v].querySelector('.accessibility-link');
+        if (link) link.innerText = visible('accessibilityLink');
+    });
+}
+
+// Reads one transcript aloud with the browser's text-to-speech. Used for any
+// track that has no real recording yet; once a track gets a `file`, it plays
+// the recording instead (see the audioTracks handling in prepareExhibits).
+function speakTranscript(btn) {
+    if (btn.classList.contains('playing')) { stopAllAudio(); return; }
+    stopAllAudio();
+    const holder = btn.dataset.tr
+        ? document.getElementById(btn.dataset.tr)
+        : btn.nextElementSibling && btn.nextElementSibling.querySelector('.transcript-text');
+    if (!holder) return;
+    let langToUse = currentLang;
+    if (langToUse === 'arc' || langToUse === 'yi') langToUse = 'he';
+    const u = new SpeechSynthesisUtterance(holder.textContent);
+    u.lang = langToUse;
+    u.rate = 0.9;
+    u.onend = () => {
+        btn.classList.remove('playing');
+        btn.setAttribute('aria-pressed', 'false');
+        btn.innerHTML = btn.innerHTML.replace('⏸️', '🎧');
+    };
+    window.speechSynthesis.speak(u);
+    btn.classList.add('playing');
+    btn.setAttribute('aria-pressed', 'true');
+    btn.innerHTML = btn.innerHTML.replace('🎧', '⏸️');
+}
+
 // Registry of languages that have full exhibit content. Each entry's full
 // data (intro + exhibits) lives in its own data-XX.js file and is only
 // fetched the first time a visitor picks that language, so a visitor never
@@ -472,7 +561,7 @@ const LANG_MANIFEST = {
 const STUB_LANGS = {
   yi: { label: 'יידיש', meta: { name: 'Yiddish יידיש', dir: 'rtl' }, intro: { title: 'ברוכים הבאים', sub: 'באַזוכער פירער אין אצ"ל מוזיי', body: 'מיר זענען צופרידן צו באַלעבאָטן אייך אין דעם מוזיי.', disc: '', btn: 'אָנהייבן רייַזע' }, exhibits: [] },
   arc: { label: 'ארמית', hidden: true, meta: { name: 'Aramaic ארמית', dir: 'rtl' },
-    ui: { readBtn: 'קְרִי', audioBtn: 'מַדְרִיכָא קָלָנָאָה', stopBtn: 'אֲבַטִּיל', resume: 'אֲהַדַּר לַאֲתַר דְּפְסַקִית (מִיצְגָא #{num})' },
+    ui: { readBtn: 'קְרִי', audioBtn: 'מַדְרִיכָא קָלָנָאָה', stopBtn: 'אֲבַטִּיל', resume: 'אֲהַדַּר לַאֲתַר דְּפְסַקִית (מִיצְגָא #{num})', transcript: 'אַחֲזִי תַּמְלוּלָא' },
     intro: { title: 'ברוכים אתיתון', sub: 'מדריכא למבקרא במוזיאון האצ"ל', body: '', disc: '', btn: 'שרו סיורא' },
     exhibits: [
       createExhibit(1, '1. עֲמִיחַי פָּאגְלִין (גִּידִי)',
@@ -614,7 +703,7 @@ const ttsBtn = document.getElementById('ttsBtn');
 function toggleContrast() {
     document.body.classList.toggle('high-contrast-mode');
     const isHighContrast = document.body.classList.contains('high-contrast-mode');
-    document.getElementById('a11y-announcer').innerText = isHighContrast ? 'מצב ניגודיות גבוהה הופעל' : 'מצב ניגודיות רגיל הופעל';
+    document.getElementById('a11y-announcer').innerText = isHighContrast ? chrome('contrastOn') : chrome('contrastOff');
 }
 
 // Sets the ltr/rtl direction class on <body> WITHOUT wiping other
@@ -714,6 +803,7 @@ async function loadLang(code) {
   document.getElementById('fontBtn').setAttribute('aria-label', a11yDict.increaseFont);
   document.getElementById('ttsBtn').setAttribute('aria-label', a11yDict.ttsPlay);
   document.querySelector('.btn-back').setAttribute('aria-label', a11yDict.back);
+  applyChrome(code, data.a11y);
   views.intro.className = `view-section active ${dir}`;
 
   document.getElementById('intro-title').innerText = data.intro.title || 'Welcome';
@@ -768,7 +858,7 @@ function prepareExhibits(code) {
   const navBar = document.getElementById('numbersBar');
 
   container.innerHTML = '';
-  navBar.innerHTML = `<button class="nav-num nav-home" onclick="navTo('home')" aria-label="חזרה לדף הבית">🏠</button>`;
+  navBar.innerHTML = `<button class="nav-num nav-home" onclick="navTo('home')" aria-label="${(data.a11y && data.a11y.back) || 'Back to home'}">🏠</button>`;
 
   if (window.exhibitObserver) window.exhibitObserver.disconnect();
 
@@ -807,15 +897,32 @@ function prepareExhibits(code) {
     let controlsHTML = '<div class="controls-row">';
     controlsHTML += `<button class="read-text-btn" onclick="speakText('${exhibit.id}', this)">🔈 ${ui.readBtn}</button>`;
     let transcriptsHTML = '';
+    let contentHTML = exhibit.content;
     if (Array.isArray(exhibit.audioTracks) && exhibit.audioTracks.length > 0) {
        // A lone track with no transcript of its own falls back to the
        // exhibit's whole audioText (that's the single-recording case).
        const soleFallback = exhibit.audioTracks.length === 1 ? exhibit.audioText : null;
-       exhibit.audioTracks.forEach(track => {
-           controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioTrack('${track.file}', this)" aria-label="${track.label}" aria-pressed="false">🎧</button>`;
+       exhibit.audioTracks.forEach((track, i) => {
            const transcript = track.transcript || soleFallback;
-           if (transcript) {
-               transcriptsHTML += `<details class="transcript-toggle"><summary>הצג תמלול: ${track.label} / Show transcript</summary><div class="transcript-text">${transcript}</div></details>`;
+           const trId = `tr-${exhibit.id}-${i}`;
+           // A track with a `file` plays that recording; one without falls
+           // back to reading its transcript aloud (text-to-speech).
+           const playCall = track.file ? `playAudioTrack('${track.file}', this)` : 'speakTranscript(this)';
+           const ariaLabel = String(track.label).replace(/"/g, '&quot;');
+           const button = cls => `<button class="audio-guide-btn ${cls}" data-tr="${trId}" onclick="${playCall}" aria-label="${ariaLabel}" aria-pressed="false">🎧</button>`;
+           // An `<!--track:N-->` marker in the content puts the button and
+           // transcript right next to their sub-heading (like the Hebrew and
+           // English inline recordings); otherwise they sit in the controls row.
+           const marker = `<!--track:${i}-->`;
+           const inline = typeof exhibit.content === 'string' && exhibit.content.includes(marker);
+           const details = transcript
+               ? `<details class="transcript-toggle"><summary>${transcriptLabel(code, ui, inline ? null : track.label)}</summary><div class="transcript-text" id="${trId}">${transcript}</div></details>`
+               : '';
+           if (inline) {
+               contentHTML = contentHTML.replace(marker, button('inline-audio-btn') + details);
+           } else {
+               controlsHTML += button('icon-only');
+               transcriptsHTML += details;
            }
        });
     } else if (exhibit.audioTracks === 'inline') {
@@ -824,7 +931,7 @@ function prepareExhibits(code) {
        // — nothing to add here.
     } else if (exhibit.audioText) {
        controlsHTML += `<button class="audio-guide-btn icon-only" onclick="playAudioGuide(${exhibit.id}, this)" aria-label="${ui.audioBtn}" aria-pressed="false">🎧</button>`;
-       transcriptsHTML += `<details class="transcript-toggle"><summary>הצג תמלול / Show transcript</summary><div class="transcript-text">${exhibit.audioText}</div></details>`;
+       transcriptsHTML += `<details class="transcript-toggle"><summary>${transcriptLabel(code, ui)}</summary><div class="transcript-text">${exhibit.audioText}</div></details>`;
     }
     controlsHTML += '</div>';
 
@@ -835,7 +942,7 @@ function prepareExhibits(code) {
       <h2 class="exhibit-title">${exhibit.title}</h2>
       ${controlsHTML}
       ${transcriptsHTML}
-      <div class="exhibit-body" id="text-${exhibit.id}">${exhibit.content}</div>
+      <div class="exhibit-body" id="text-${exhibit.id}">${contentHTML}</div>
     `;
     container.appendChild(item);
 
@@ -853,7 +960,7 @@ function prepareExhibits(code) {
 
     navBtn.innerText = exhibit.id;
     navBtn.setAttribute('data-id', exhibit.id);
-    navBtn.setAttribute('aria-label', `מיצג מספר ${exhibit.id}`);
+    navBtn.setAttribute('aria-label', chrome('exhibitN').replace('{num}', exhibit.id));
 
     navBtn.onclick = () => {
       manualNavLock = true;
@@ -1126,10 +1233,10 @@ document.getElementById('fontBtn').addEventListener('click', () => {
     let newSizeMsg = '';
     if (current === '16px') {
         body.style.fontSize = '20px';
-        newSizeMsg = 'הטקסט הוגדל';
+        newSizeMsg = chrome('fontLarger');
     } else {
         body.style.fontSize = '16px';
-        newSizeMsg = 'הטקסט הוקטן לגודל רגיל';
+        newSizeMsg = chrome('fontReset');
     }
     document.getElementById('a11y-announcer').innerText = newSizeMsg;
 });

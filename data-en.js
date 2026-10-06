@@ -5,7 +5,8 @@ window.DATA_EN = {
     readBtn: 'Read Text',
     audioBtn: 'Audio Guide',
     stopBtn: 'Stop',
-    resume: 'Resume where you left off (exhibit #{num})'
+    resume: 'Resume where you left off (exhibit #{num})',
+    transcript: 'Show transcript'
   },
   a11y: {
     search: 'Search language',
@@ -13,7 +14,17 @@ window.DATA_EN = {
     decreaseFont: 'Decrease font',
     ttsPlay: 'Read text',
     ttsStop: 'Stop reading',
-    back: 'Back to home'
+    back: 'Back to home',
+    skip: 'Skip to main content',
+    contrast: 'Toggle high contrast',
+    contrastOn: 'High contrast on',
+    contrastOff: 'Normal contrast restored',
+    fontLarger: 'Text enlarged',
+    fontReset: 'Text size reset',
+    exhibitN: 'Exhibit {num}',
+    scrollTop: 'Back to top',
+    accessibilityLink: 'Accessibility Statement',
+    backShort: 'Back'
   },
   intro: {
     title: 'Welcome',
@@ -142,7 +153,7 @@ You are also invited to view a video with testimonies of the battle.`,
 A month before the British left Palestine, "Delek" (which means fuel), Etzel's intelligence branch, learnt that a train laden with weapons and ammunition was to travel from Haifa to Tulkarem , delivering its cargo to Arab forces.
 Etzel decided to capture the train and confiscate the arms and ammunition. The plan was to ambush the train by laying explosives at a bend along the route.
 The train set out after a three-day delay, due to the British concern that the weapons would be captured by one of the Jewish underground organizations. When it arrived at the bend in the tracks, the explosives were detonated as planned, the locomotive veered off the rails and the train came to a halt.
-The Etzel quickly discovered that the number of British soldiers on the train was greater than anticipated and that the wagons were armored. Etzel's Chief Operations Officer, Amihai "Gidi" Paglin, stood in front of the wrecked train and shouted to the British troops: "Captain John! Captain John! Listen, Listen! You are surrounded on every side by hundreds of armed Etzel fighters. We aim to confiscate the weapons. Surrende, you have no choice, we will not harm you. If you resist, not a single one of you will remain alive. We will blow up the entire train. Come out with your hands up! This is my last warning!"
+The Etzel quickly discovered that the number of British soldiers on the train was greater than anticipated and that the wagons were armored. Etzel's Chief Operations Officer, Amihai "Gidi" Paglin, stood in front of the wrecked train and shouted to the British troops: "Captain John! Captain John! Listen, Listen! You are surrounded on every side by hundreds of armed Etzel fighters. We aim to confiscate the weapons. Surrender, you have no choice, we will not harm you. If you resist, not a single one of you will remain alive. We will blow up the entire train. Come out with your hands up! This is my last warning!"
 When the British troops surrendered and emerged from the train, they discovered, to their great surprise, that the railway line had not been booby-trapped and that they were "surrounded" by 27 weary Etzel fighters armed with unusable weapons.
 Once the British surrendered, the Etzel fighters began to unload the weapons from the train onto waiting trucks. When they realized that time was running short and British reinforcements were on their way, "Gidi" demanded that the British commander and his troops help transfer the weapons.
 Thus it was that Etzel fighters and British soldiers joined together to unload some 50 tons of weapons and ammunition, including 20,000 mortar shells which would later be put to use by the Etzel's "orphan" mortars.

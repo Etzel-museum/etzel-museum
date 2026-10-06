@@ -5,7 +5,8 @@ window.DATA_HE = {
       readBtn: 'הקרא טקסט',
       audioBtn: 'מדריך קולי',
       stopBtn: 'עצור',
-      resume: 'המשך מאיפה שהפסקת (מיצג #{num})'
+      resume: 'המשך מאיפה שהפסקת (מיצג #{num})',
+      transcript: 'הצג תמלול'
     },
     a11y: {
       search: 'חפש שפה',
@@ -13,7 +14,17 @@ window.DATA_HE = {
       decreaseFont: 'הקטן טקסט',
       ttsPlay: 'הקרא טקסט',
       ttsStop: 'עצור הקראה',
-      back: 'חזרה לדף הבית'
+      back: 'חזרה לדף הבית',
+      skip: 'דלג לתוכן המרכזי',
+      contrast: 'החלף מצב ניגודיות גבוהה',
+      contrastOn: 'מצב ניגודיות גבוהה הופעל',
+      contrastOff: 'מצב ניגודיות רגיל הופעל',
+      fontLarger: 'הטקסט הוגדל',
+      fontReset: 'הטקסט הוקטן לגודל רגיל',
+      exhibitN: 'מיצג מספר {num}',
+      scrollTop: 'חזרה למעלה',
+      accessibilityLink: 'הצהרת נגישות',
+      backShort: 'חזרה'
     },
     intro: {
       title: 'ברוכים הבאים',

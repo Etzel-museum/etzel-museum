@@ -156,6 +156,22 @@
       font-size: 0.95em; line-height: 1.6;
       white-space: pre-line; border-radius: 4px;
   }
+  /* Shown on the home page when a museum QR sticker was scanned before a language was chosen. */
+  .deeplink-banner {
+      margin: 10px auto; max-width: 420px; padding: 12px 16px; text-align: center;
+      font-weight: bold; color: var(--etzel-blue); background: #fff3c4;
+      border: 2px solid var(--etzel-gold); border-radius: 12px;
+  }
+  /* The exhibit (heading) a scanned sticker points to. */
+  .sticker-hit {
+      background: #fff3c4; color: #000; border-radius: 4px;
+      box-shadow: 0 0 0 4px var(--etzel-gold);
+      scroll-margin-top: calc(var(--sticky-nav-h) + 16px);
+      animation: stickerPulse 1.6s ease-out 2;
+  }
+  @keyframes stickerPulse { 0% { background: #ffd54f; } 100% { background: #fff3c4; } }
+  body.high-contrast-mode .sticker-hit { background: #ff0; color: #000; box-shadow: 0 0 0 4px #fff; }
+  .track-block { display: flex; flex-direction: column; align-items: flex-start; margin-top: 12px; }
   .inline-audio-btn + .transcript-toggle { display: inline-block; vertical-align: middle; margin: 0 8px; }
 
   .audio-guide-btn, .read-text-btn {
@@ -352,6 +368,9 @@
     <h1>מוזיאון האצ"ל בתש"ח</h1>
     <h2>The Etzel 1947-1949 Museum</h2>
   </header>
+  <div id="deeplinkBanner" class="deeplink-banner" role="status" style="display:none">
+    בחרו שפה כדי להמשיך למיצג<br>Choose your language to continue to the exhibit
+  </div>
   <div class="search-box" role="search">
     <input type="text" id="searchInput" class="search-input" placeholder="Search Language / חפש שפה..." aria-label="חפש שפה" oninput="filterLangs()">
   </div>
@@ -674,8 +693,106 @@ function saveProgress(lang, exhibitId) {
   } catch (e) { /* localStorage unavailable — progress just won't persist */ }
 }
 
+// The language a visitor last chose, so scanning a second QR sticker in the
+// museum goes straight to the exhibit instead of asking again.
+const LANG_STORE_KEY = 'etzel_lang';
+function getSavedLang() {
+  try {
+    const c = localStorage.getItem(LANG_STORE_KEY);
+    return (c && LANG_MANIFEST[c] && !LANG_MANIFEST[c].hidden) ? c : null;
+  } catch (e) { return null; }
+}
+function saveLang(code) {
+  try {
+    if (LANG_MANIFEST[code] && !LANG_MANIFEST[code].hidden) localStorage.setItem(LANG_STORE_KEY, code);
+  } catch (e) { /* storage unavailable — the visitor is just asked again next time */ }
+}
+
+// Museum stickers. Every physical exhibit carries a QR code for ".../#NNN":
+// chapter * 100 + sub-number (101 = 1.1, 703 = 7.3), and chapters 10 and up
+// continue as 1001, 1101, 1201, 1301. A chapter with no sub-numbers (4, 10, 13)
+// is sticker x01. The code holds no language; that is chosen on the first scan.
+let pendingSticker = null;
+function parseStickerHash() {
+  const m = /^#(\d{3,4})$/.exec(location.hash);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const ch = n < 1000 ? Math.floor(n / 100) : 10 + Math.floor((n - 1000) / 100);
+  const sub = n % 100;
+  return (ch >= 1 && ch <= 13 && sub >= 1) ? { n, ch, sub } : null;
+}
+
+// Shows the exhibit a sticker points to. Scrolls to the sub-heading, except for the
+// first one of a chapter, where the chapter title (with any chapter-wide recording)
+// is kept in view.
+function openSticker(t) {
+  const item = document.getElementById(`exhibit-${t.ch}`);
+  if (!item) return false;
+  navTo('exhibits');
+  document.querySelectorAll('.sticker-hit').forEach(e => e.classList.remove('sticker-hit'));
+  const re = new RegExp(`^${t.ch}\\.${t.sub}(?!\\d)`);
+  const heading = [...item.querySelectorAll('.exhibit-body strong')]
+    .find(s => !s.closest('details') && re.test(s.textContent.trim()));
+  const hit = heading || (t.sub === 1 ? item.querySelector('.exhibit-title') : null);
+  if (hit) hit.classList.add('sticker-hit');
+  const scrollTarget = (!heading || t.sub === 1) ? item : heading;
+
+  manualNavLock = true;
+  document.querySelectorAll('.nav-num').forEach(b => b.classList.remove('active'));
+  const navBtn = document.querySelector(`.nav-num[data-id="${t.ch}"]`);
+  if (navBtn) navBtn.classList.add('active', 'visited');
+  saveProgress(currentLang, String(t.ch));
+  preloadExhibitAudio(t.ch);
+  // navTo() resets the scroll position, so wait for the view to lay out first.
+  setTimeout(() => {
+    scrollTarget.scrollIntoView({ behavior: 'auto', block: 'start' });
+    const label = (hit || item.querySelector('.exhibit-title') || {}).textContent;
+    if (label) document.getElementById('a11y-announcer').innerText = label.trim();
+    setTimeout(() => { manualNavLock = false; }, 900);
+  }, 80);
+  return true;
+}
+
+// Language cards for the languages set on the visitor's phone come first.
+// English is deliberately not promoted: many visitors keep their phone in
+// English without reading it well enough for the museum.
+function prioritizeDeviceLanguages() {
+  const grid = document.getElementById('langsGrid');
+  const prefs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language])
+    .filter(Boolean).map(l => l.toLowerCase().split('-')[0]).map(l => (l === 'iw' ? 'he' : l));
+  const order = [];
+  prefs.forEach(p => { if (LANG_MANIFEST[p] && !LANG_MANIFEST[p].hidden && p !== 'en' && !order.includes(p)) order.push(p); });
+  order.reverse().forEach(code => {
+    const card = [...grid.children].find(c => c.dataset.code === code);
+    if (card) grid.prepend(card);
+  });
+}
+
+// Called on page load and when the #NNN part changes. Returns true when the
+// address was a sticker link.
+function startFromHash() {
+  const t = parseStickerHash();
+  if (!t) return false;
+  pendingSticker = t;
+  const saved = getSavedLang();
+  if (saved) {
+    loadLang(saved);
+  } else {
+    document.getElementById('deeplinkBanner').style.display = 'block';
+    prioritizeDeviceLanguages();
+  }
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
+  startFromHash();
+  window.addEventListener('hashchange', () => {
+    const t = parseStickerHash();
+    if (!t) return;
+    if (document.getElementById('exhibits-container').children.length) openSticker(t);
+    else startFromHash();
+  });
 
   document.querySelectorAll('.accessibility-link').forEach(link => {
     link.addEventListener('keydown', (e) => {
@@ -734,6 +851,7 @@ function initHome() {
       </div>
     `;
     card.setAttribute('data-name', entry.meta.name.toLowerCase());
+    card.setAttribute('data-code', code);
     grid.appendChild(card);
   }
 }
@@ -761,7 +879,10 @@ function ensureLangData(code) {
 }
 
 async function loadLang(code) {
-  const card = event && event.currentTarget;
+  // Only a click on a language card has a card to show loading/error state on
+  // (loadLang is also called from page load and the sticker flow).
+  const ev = window.event;
+  const card = (ev && ev.type === 'click' && ev.currentTarget && ev.currentTarget.classList) ? ev.currentTarget : null;
   if (card) {
     card.disabled = true;
     card.classList.remove('load-error');
@@ -793,6 +914,7 @@ async function loadLang(code) {
   }
 
   currentLang = code;
+  saveLang(code);
   const dir = data.meta.dir;
 
   setBodyDir(dir);
@@ -825,6 +947,14 @@ async function loadLang(code) {
     resumeRow.style.display = 'block';
   } else {
     resumeRow.style.display = 'none';
+  }
+
+  // Arrived through a museum sticker: skip the welcome page and open that exhibit.
+  if (pendingSticker) {
+    const t = pendingSticker;
+    pendingSticker = null;
+    document.getElementById('deeplinkBanner').style.display = 'none';
+    openSticker(t);
   }
 }
 
@@ -920,6 +1050,10 @@ function prepareExhibits(code) {
                : '';
            if (inline) {
                contentHTML = contentHTML.replace(marker, button('inline-audio-btn') + details);
+           } else if (exhibit.audioTracks.length > 1) {
+               // Several recordings under one exhibit: each button sits
+               // directly above its own transcript toggle.
+               transcriptsHTML += `<div class="track-block">${button('icon-only')}${details}</div>`;
            } else {
                controlsHTML += button('icon-only');
                transcriptsHTML += details;
